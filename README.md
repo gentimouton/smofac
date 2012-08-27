@@ -1,7 +1,7 @@
 Smoothie Factory
 ======
 
-Smoothie Factory is inspired by Rat-Poker, a Microsoft game from 1997
+Smoothie Factory is inspired by Rat-Poker, a Microsoft game from 1997. Video: http://www.youtube.com/watch?v=viKON2PMH0g
 
 Purpose: use pygame, know how to make UI menus, play a game with GF
 
