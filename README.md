@@ -23,6 +23,7 @@ phase 1
 phase 2
 - UI menus, configs (frame rate, sound, controls)
 - different combos
+- fruits decay over time (rotten fruits bring less points)
 - conditional paths (e.g. blues go right, others go left)
 - multiple traps (store multiple rats, teleport rats)
 - 2-player: shared screen, one player controls traps inside the loop, the other controls traps outside the loop (so when there's a fork in the path, only one player can handle a branch but not the other)
