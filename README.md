@@ -5,7 +5,7 @@ Smoothie Factory is inspired by Rat-Poker, a Microsoft game from 1997. Video: ht
 
 Purpose: use pygame, know how to make UI menus, play a game with GF
 
-Concept: Fruits appear from a door, and travel on a path throughout the kitchen. You're in charge of ordering fruits according to certain recipes, so that when they reach the chef, they can be processed into a smoothie.
+Concept: Fruits appear from a door, and travel on a conveyor path throughout the factory. You're in charge of ordering fruits according to certain recipes, so that when they reach the blender, they can be processed into a smoothie.
 
 
 
@@ -14,7 +14,8 @@ Phases
 =====
 
 phase 1
-- 1 combo (3 in a row)
+- 2 recipes (2 and 3 in a row)
+- 3 fruit types (R=strawb, G=kiwi, B=blueberry)
 - 1 trap
 - square path
 - no menu
@@ -22,8 +23,20 @@ phase 1
 
 phase 2
 - UI menus, configs (frame rate, sound, controls)
-- different combos
-- fruits decay over time (rotten fruits bring less points)
-- conditional paths (e.g. blues go right, others go left)
-- multiple traps (store multiple rats, teleport rats)
+- sound effects and music
+- 6 recipes
+- multiple types of traps (store multiple fruits, teleport fruits to another trap's cell)
 - 2-player: shared screen, one player controls traps inside the loop, the other controls traps outside the loop (so when there's a fork in the path, only one player can handle a branch but not the other)
+- power-up: slow down the conveyor 
+
+
+phase 3
+- fruits decay over time (rotten fruits bring less points)?
+- more power-ups: turn all of the fruits in an area into strawbs, or the blender accepts the next 5 fruits whatever they are, or the rotten fruits are cleaned from the conveyor
+- conditional paths (e.g. blues go right, others go left)?
+- bigger fruits bring more points? (Cf rats with a small 'plus' bag)
+- polishing at the level of popcap
+- embedded tutorial (hardcode an easy order at which the fruit spawns?)
+- story? Young kid wants to become rich making the best smoothies in the world. S/he starts making smoothies in the garage, then buys small factory, then large factory.
+- pacing within and between levels
+- playtests
