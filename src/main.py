@@ -19,7 +19,7 @@ def main():
     
     
     while 1:
-        clock.tick(30)
+        clock.tick(2)
     
         #Handle Input Events
         for event in pygame.event.get():
@@ -28,8 +28,8 @@ def main():
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 return
             
-        board.display(screen)
-        
+        board.update()
+        pygame.display.flip()
     
 if __name__ == "__main__":
     main()

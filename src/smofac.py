@@ -1,6 +1,6 @@
 # TODO: parse the map to build each cell's nextcell and prevcell
 
-# exit area    
+# exit area
 if X.fruit: # to the blender!
     del fruit
 cell = X.prevcell
@@ -15,7 +15,7 @@ if L.fruit:
     if L.fruit.isleaving: # part of previous combo
         K.fruit = L.fruit
         del L.fruit
-    elif L.fruit:
+    elif L.fruit: # TODO: this will always happen
         if L.prevcell.fruit:
             if (L.fruit, L.prevcell.fruit) in recipes:
                 K.fruit = L.fruit
