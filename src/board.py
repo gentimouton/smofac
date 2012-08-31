@@ -1,5 +1,5 @@
 from cell import Cell
-from constants import BGCOLOR, RECIPES, FRUIT_LIST
+from constants import BGCOLOR, RECIPES, FRUIT_LIST, SPAWNFREQ
 from fruit import Fruit
 import logging
 import os
@@ -84,7 +84,7 @@ class Board():
         
         self.rng = random.Random()
         self.rng.seed(0) # determinism = easier to debug
-        self.spawn_timer = self.spawn_freq = 2 # spawn fruits every X frames 
+        self.spawn_timer = SPAWNFREQ # spawn fruits every X frames 
         self.fruits = {}
         self.fruits_spawned = 0 # counter that ++ when a fruit appears
         
@@ -138,7 +138,7 @@ class Board():
             
         path_direction = cellstr[1]
 
-        return Cell(self, coords, path_direction, waypoint=='T')
+        return Cell(self, coords, path_direction, waypoint == 'T')
         
  
     
@@ -192,6 +192,9 @@ class Board():
         kfruit = self.K.fruit
         if kfruit: # to the blender!
             del self.fruits[kfruit.fruit_id]
+            logging.debug('removed fruit#%d - %s, now have fruits %s' 
+                         % (kfruit.fruit_id, kfruit.fruit_type, 
+                            ','.join([str(k) for k in self.fruits.keys()])))
             self.K.fruit = None
         cell = self.K.prevcell
         while cell != None: # X.prevcell is None
@@ -213,6 +216,8 @@ class Board():
                 prev_fruit = self.W.prevcell.fruit
                 if prev_fruit:
                     if (wfruit.fruit_type, prev_fruit.fruit_type) in RECIPES:
+                        logging.debug('Recipe match from fruits %d and %d'
+                                     % (wfruit.fruit_id, prev_fruit.fruit_id))
                         self.X.fruit = wfruit
                         wfruit.cell = self.X
                         self.W.fruit = None
@@ -266,7 +271,7 @@ class Board():
                 
         for fruit in self.fruits.values():
             fruit.update() # eventually move
-            self.screen.blit(fruit.image, fruit.rect)
+            self.screen.blit(fruit.surf, fruit.rect)
         
         return isgameover
     
@@ -286,12 +291,14 @@ class Board():
                 fruit = Fruit(self.E, fruit_type, fruit_id)
                 self.fruits[fruit_id] = fruit
                 self.E.fruit = fruit
-                self.spawn_timer = self.spawn_freq
+                self.spawn_timer = SPAWNFREQ
                 self.fruits_spawned += 1
+                logging.debug('spawned fruit#%d - %s, now have fruits %s' 
+                             % (fruit_id, fruit_type, ','.join([str(k) for k in self.fruits.keys()])))
                 return False
 
     def trap(self):
         """ User pushed the TRAP key; try to trap a fruit """
-        caught = self.T.catch()
+        caught = self.T.trap()
         
         

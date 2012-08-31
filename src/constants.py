@@ -14,3 +14,5 @@ RECIPES = [('strawb', 'strawb'),
 
 BGCOLOR = (33, 33, 33)
 CELLSIZE = 50
+
+SPAWNFREQ = 3

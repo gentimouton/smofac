@@ -6,7 +6,7 @@ import pygame
 
 def main():
 
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     pygame.init()
     clock = pygame.time.Clock()
@@ -19,7 +19,7 @@ def main():
     
     
     while 1:
-        clock.tick(2)
+        clock.tick(1.5)
     
         # handle inputs
         for event in pygame.event.get():
@@ -37,7 +37,7 @@ def main():
         
         if isgameover:
             logging.info('game over')
-            return
+            #return
     
     
 if __name__ == "__main__":

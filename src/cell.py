@@ -44,13 +44,30 @@ class Cell(pygame.sprite.Sprite):
         its target is the cell it is stealing from. """
         self.target = targetcell
         
-    def catch(self):
-        """ try to catch a fruit from the target cell """
-        fruit = self.target.fruit
-        if fruit:
-            self.fruit = fruit
-            self.target.fruit = None
-            fruit.cell = self
-            return True
-        else:
-            return False
+    def trap(self):
+        """ try to catch/drop/swap a fruit from/to/with the target cell.
+        Return whether the trap has a fruit in the end.
+        """
+        myfruit = self.fruit
+        targetfruit = self.target.fruit
+        if myfruit:
+            if targetfruit: # swap
+                self.target.fruit = myfruit
+                myfruit.cell = self.target
+                self.fruit = targetfruit
+                targetfruit.cell = self
+                return True
+            else: # release
+                self.target.fruit = myfruit
+                myfruit.cell = self.target
+                self.fruit = None
+                return False
+        else: # I have no fruit
+            if targetfruit: # catch
+                self.fruit = targetfruit
+                self.target.fruit = None
+                targetfruit.cell = self
+                return True
+            else:
+                return False
+            
