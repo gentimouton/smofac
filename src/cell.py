@@ -10,7 +10,7 @@ class Cell(pygame.sprite.Sprite):
         """
         self.left, self.top = self.coords = coords
         self.board = board
-        self.pathdir = pathdir
+        self.pathdir = pathdir # non-null for traps
         self.nextcell = None # will remain None for the exit
         self.prevcell = None # will remain None for the entrance
         self.fruit = None # TODO: temporary set by the board
@@ -38,3 +38,19 @@ class Cell(pygame.sprite.Sprite):
         else:
             fruitdata = 'NOFRUIT'
         return 'Cell: %s' % (str(self.coords)) + fruitdata
+
+    def set_target(self, targetcell):
+        """ When the cell is a trap, 
+        its target is the cell it is stealing from. """
+        self.target = targetcell
+        
+    def catch(self):
+        """ try to catch a fruit from the target cell """
+        fruit = self.target.fruit
+        if fruit:
+            self.fruit = fruit
+            self.target.fruit = None
+            fruit.cell = self
+            return True
+        else:
+            return False

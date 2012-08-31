@@ -59,7 +59,7 @@ class Board():
         # build the path: link cells to each other
         cell = self.E # entrance
         while not cell.nextcell: # ends when cells from entrance + loop areas are all linked  
-            nextcoords = self.get_coords_from_direction(cell.coords, cell.pathdir)
+            nextcoords = self.get_coords_from_dir(cell.coords, cell.pathdir)
             nextcell = self.get_cell(nextcoords)
             # wire
             cell.nextcell = nextcell
@@ -69,7 +69,7 @@ class Board():
 
         cell = self.X
         while cell != self.K: 
-            nextcoords = self.get_coords_from_direction(cell.coords, cell.pathdir)
+            nextcoords = self.get_coords_from_dir(cell.coords, cell.pathdir)
             nextcell = self.get_cell(nextcoords)
             # wire
             cell.nextcell = nextcell
@@ -77,6 +77,11 @@ class Board():
             # and keep going
             cell = nextcell
 
+        # wire the traps
+        target_coords = self.get_coords_from_dir(self.T.coords, self.T.pathdir)
+        target_cell = self.get_cell(target_coords)
+        self.T.set_target(target_cell)
+        
         self.rng = random.Random()
         self.rng.seed(0) # determinism = easier to debug
         self.spawn_timer = self.spawn_freq = 2 # spawn fruits every X frames 
@@ -159,7 +164,7 @@ class Board():
             return None
         
         
-    def get_coords_from_direction(self, coords, direction):
+    def get_coords_from_dir(self, coords, direction):
         """ If given coords = i,j,
         and direction = DIR_UP,
         then return i, j-1
@@ -257,28 +262,36 @@ class Board():
             cell = cell.prevcell
 
         # spawn a fruit - must happen after all moves have been resolved        
-        self.spawn()
+        isgameover = self.spawn()
                 
         for fruit in self.fruits.values():
             fruit.update() # eventually move
             self.screen.blit(fruit.image, fruit.rect)
+        
+        return isgameover
+    
+    
 
     def spawn(self):
         """ Spawn a fruit if it's time to do it. """
         
         self.spawn_timer -= 1
         if self.spawn_timer <= 0:
-            if self.E.fruit:
-                logging.info('game over') # TODO: stop the game
-            else:
+            if self.E.fruit: # should spawn new fruit, but can't: game over!
+                return True
+            else: # can spawn: game keeps going
                 fruit_id = self.fruits_spawned
                 random_int = self.rng.randint(0, len(FRUIT_LIST) - 1)
                 fruit_type = FRUIT_LIST[random_int]
-                fruit = Fruit(self.E, fruit_type, fruit_id) # strawberry
+                fruit = Fruit(self.E, fruit_type, fruit_id)
                 self.fruits[fruit_id] = fruit
                 self.E.fruit = fruit
                 self.spawn_timer = self.spawn_freq
                 self.fruits_spawned += 1
+                return False
 
+    def trap(self):
+        """ User pushed the TRAP key; try to trap a fruit """
+        caught = self.T.catch()
         
         
