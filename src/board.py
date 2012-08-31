@@ -1,18 +1,12 @@
+from cell import Cell
+from constants import BGCOLOR, RECIPES, FRUIT_LIST
+from fruit import Fruit
 import logging
 import os
 import pygame
+import random
 
-# constants
-DIR_UP = 1
-DIR_DOWN = 2
-DIR_LEFT = 3
-DIR_RIGHT = 4
-DIR_MAP = {'U': DIR_UP,
-           'D': DIR_DOWN,
-           'L': DIR_LEFT,
-           'R': DIR_RIGHT,
-           '.': None
-           }
+
 
 class Board():
     
@@ -55,9 +49,16 @@ class Board():
 
             self.__cellgrid.append(tmprow)
         
+        self.E = self.get_cell(self.e_coords)
+        self.J = self.get_cell(self.j_coords)
+        self.W = self.get_cell(self.w_coords)
+        self.X = self.get_cell(self.x_coords)
+        self.K = self.get_cell(self.k_coords)
+        self.T = self.get_cell(self.t_coords)
+        
         # build the path: link cells to each other
-        cell = self.get_cell(self.e_coords) # entrance
-        while not cell.nextcell: # ends when cells from the entrance + loop areas are all linked  
+        cell = self.E # entrance
+        while not cell.nextcell: # ends when cells from entrance + loop areas are all linked  
             nextcoords = self.get_coords_from_direction(cell.coords, cell.pathdir)
             nextcell = self.get_cell(nextcoords)
             # wire
@@ -65,44 +66,38 @@ class Board():
             nextcell.prevcell = cell
             # and keep going
             cell = nextcell
+
+        cell = self.X
+        while cell != self.K: 
+            nextcoords = self.get_coords_from_direction(cell.coords, cell.pathdir)
+            nextcell = self.get_cell(nextcoords)
+            # wire
+            cell.nextcell = nextcell
+            nextcell.prevcell = cell
+            # and keep going
+            cell = nextcell
+
+        self.rng = random.Random()
+        self.rng.seed(0) # determinism = easier to debug
+        self.spawn_timer = self.spawn_freq = 2 # spawn fruits every X frames 
+        self.fruits = {}
+        self.fruits_spawned = 0 # counter that ++ when a fruit appears
         
-        self.E = self.get_cell(self.e_coords)
-        self.J = self.get_cell(self.j_coords)
-        self.W = self.get_cell(self.w_coords)
-        self.X = self.get_cell(self.x_coords)
-        self.K = self.get_cell(self.k_coords)
-        
-        # TODO: temporary spawn 1 fruit
-        fruit = Fruit(self.E)
-        self.fruits = [fruit]
-        self.E.fruit = fruit
-        
-        
+
         ########### GFX ############
         
         # init the board display
         bg = pygame.Surface(screen.get_size())
         bg = bg.convert()
-        bg.fill((33, 33, 33))
-        celsize = 50
+        bg.fill(BGCOLOR)
         for left in range(self.width):
             for top in range(self.height):
-                cspr_left = left * celsize
-                cspr_top = top * celsize
-                cellrect = pygame.Rect(cspr_left, cspr_top, celsize, celsize)
-                cellsurf = pygame.Surface((celsize, celsize))
-                # blit the cell to world bg
-                if self.get_cell(left, top).iswalkable():
-                    cellsurf.fill((255, 255, 255))
-                else:
-                    cellsurf.fill((123, 123, 123))
-                bg.blit(cellsurf, cellrect)
+                cell = self.get_cell(left, top)
+                bg.blit(cell.surf, cell.rect)
         
         self.bg = bg
         self.screen = screen
         screen.blit(bg, (0, 0))
-        for fruit in self.fruits:
-            self.screen.blit(fruit.image, fruit.rect)        
         
         logging.info('Board built')
         
@@ -121,6 +116,7 @@ class Board():
         with X being the type of cell (- for walkable, E for entrance),
         and Y being the direction to go next in the path (U,D,L,R).
         """
+        
         waypoint = cellstr[0]
         if waypoint == 'E': # entrance cell
             self.e_coords = coords
@@ -128,18 +124,16 @@ class Board():
             self.j_coords = coords
         elif waypoint == 'W': # waiting cell
             self.w_coords = coords
-        elif waypoint == 'X': # exit cell, below waiting cell
+        elif waypoint == 'X': # exit cell, just next to the waiting cell
             self.x_coords = coords
-        elif waypoint == 'K': # kill cell 
+        elif waypoint == 'K': # kill cell at the end of the path 
             self.k_coords = coords
+        elif waypoint == 'T': # trap
+            self.t_coords = coords
+            
+        path_direction = cellstr[1]
 
-        if waypoint == 'W':
-            path_direction = DIR_MAP[cellstr[1]]
-            #exit_direction = DIR_MAP[cellstr[2]] # TODO: add exit path
-        else:
-            path_direction = DIR_MAP[cellstr[1]]
-
-        return Cell(self, coords, path_direction)
+        return Cell(self, coords, path_direction, waypoint=='T')
         
  
     
@@ -171,13 +165,13 @@ class Board():
         then return i, j-1
         """
         left, top = coords
-        if direction == DIR_UP:
+        if direction == 'U':
             c = left, top - 1
-        elif direction == DIR_DOWN:
+        elif direction == 'D':
             c = left, top + 1
-        elif direction == DIR_LEFT:
+        elif direction == 'L':
             c = left - 1, top
-        elif direction == DIR_RIGHT:
+        elif direction == 'R':
             c = left + 1, top
         return c
     
@@ -189,14 +183,48 @@ class Board():
         """
         self.screen.blit(self.bg, (0, 0))
         
-        # loading cell
-        if self.W.fruit:
-            leftover_fruit = self.W.fruit
-            self.W.fruit = None
-        else:
+        # exit cells
+        kfruit = self.K.fruit
+        if kfruit: # to the blender!
+            del self.fruits[kfruit.fruit_id]
+            self.K.fruit = None
+        cell = self.K.prevcell
+        while cell != None: # X.prevcell is None
+            if cell.fruit:
+                cell.nextcell.fruit = cell.fruit
+                cell.fruit.cell = cell.nextcell
+                cell.fruit = None
+            cell = cell.prevcell
+
+        # waiting cell
+        wfruit = self.W.fruit
+        if wfruit:
+            if wfruit.isleaving: # part of a leaving recipe: kick it out!
+                self.X.fruit = wfruit
+                wfruit.cell = self.X
+                self.W.fruit = None
+                leftover_fruit = None
+            else: # wfruit not part of a recipe already
+                prev_fruit = self.W.prevcell.fruit
+                if prev_fruit:
+                    if (wfruit.fruit_type, prev_fruit.fruit_type) in RECIPES:
+                        self.X.fruit = wfruit
+                        wfruit.cell = self.X
+                        self.W.fruit = None
+                        prev_fruit.isleaving = True
+                        leftover_fruit = None
+                    else: # 2 fruits but no recipe matching
+                        # wfruit keeps moving, 
+                        # but we need to process the other fruits first
+                        self.W.fruit = None
+                        leftover_fruit = wfruit # stash wfruit
+                else: # only 1 fruit: wait for another one
+                    leftover_fruit = None
+                    pass # TODO: fruit sprite should be "standing"
+        else: # no fruit
             leftover_fruit = None
-            
-        # looping area
+
+        # looping cells
         cell = self.W.prevcell
         while cell != self.W:
             if cell.fruit:
@@ -209,7 +237,7 @@ class Board():
             self.W.nextcell.fruit = leftover_fruit
             leftover_fruit.cell = self.W.nextcell
             
-        # entrance area
+        # entrance cells
         if self.J.fruit:
             if self.J.nextcell.fruit:
                 pass # TODO: sprite should be "standing" instead of "walking"
@@ -227,56 +255,30 @@ class Board():
                     cell.fruit.cell = cell.nextcell
                     cell.fruit = None
             cell = cell.prevcell
-        
-        for fruit in self.fruits:
+
+        # spawn a fruit - must happen after all moves have been resolved        
+        self.spawn()
+                
+        for fruit in self.fruits.values():
             fruit.update() # eventually move
-            self.screen.blit(fruit.image, fruit.rect) 
-            
-        
-##########################################################################
+            self.screen.blit(fruit.image, fruit.rect)
 
-class Fruit(pygame.sprite.Sprite):
-    
-    def __init__(self, cell):
-        self.cell = cell
-        self.update()
-        self.image = pygame.Surface((50, 50))
-        self.image.fill((111, 0, 0))
-    
-    def __repr__(self):
-        return 'Fruit at %s' % (str(self.cell.coords))
-    def __str__(self):
-        return self.__repr__()
+    def spawn(self):
+        """ Spawn a fruit if it's time to do it. """
         
+        self.spawn_timer -= 1
+        if self.spawn_timer <= 0:
+            if self.E.fruit:
+                logging.info('game over') # TODO: stop the game
+            else:
+                fruit_id = self.fruits_spawned
+                random_int = self.rng.randint(0, len(FRUIT_LIST) - 1)
+                fruit_type = FRUIT_LIST[random_int]
+                fruit = Fruit(self.E, fruit_type, fruit_id) # strawberry
+                self.fruits[fruit_id] = fruit
+                self.E.fruit = fruit
+                self.spawn_timer = self.spawn_freq
+                self.fruits_spawned += 1
 
-    def update(self):
-        left, top = self.cell.coords
-        self.rect = pygame.Rect(left * 50, top * 50, 50, 50)
         
         
-        
-class Cell():
-    
-    def __init__(self, board, coords, pathdir):
-        """ 
-        coords are my coordinates.
-        pathdir is the direction of the next cell in the path (e.g. DIR_UP).  
-        """
-        self.left, self.top = self.coords = coords
-        self.board = board
-        self.pathdir = pathdir
-        self.nextcell = None # will remain None for the exit
-        self.prevcell = None # will remain None for the entrance
-        self.fruit = None # TODO: temporary set by the board
-        
-    def __str__(self):
-        return self.__repr__()
-    def __repr__(self):
-        if self.fruit:
-            fruitdata = 'FRUIT'
-        else:
-            fruitdata = 'NOFRUIT'
-        return 'Cell: %s' % (str(self.coords)) + fruitdata
-  
-    def iswalkable(self):
-        return self.prevcell or self.nextcell

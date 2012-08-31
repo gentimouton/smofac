@@ -21,13 +21,14 @@ def main():
     while 1:
         clock.tick(2)
     
-        #Handle Input Events
+        # handle inputs
         for event in pygame.event.get():
             if event.type == QUIT:
                 return
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 return
-            
+        
+        # update board
         board.update()
         pygame.display.flip()
     
