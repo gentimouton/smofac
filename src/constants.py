@@ -13,12 +13,17 @@ DIR_LEFT = 'L'
 DIR_RIGHT = 'R'
 DIR_MAP = [DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT]
 
-# fruits
-# TODO: replace with constants rather than string slugs
-FRUIT_LIST = ['strawb', 'kiwi', 'blueb']
-RECIPES = {('strawb', 'strawb'):10,
-           ('kiwi', 'kiwi'):10,
-           ('blueb', 'blueb'):10
+# fruits 
+# TODO: replace with constants rather than string slugs?
+# NO FRUIT CAN BE NAMED 'score'!
+FRUIT_LIST = ['strawb', 'kiwi', 'blueb'] 
+# TODO: should be able to specify X,X,X for triple-whatever as a recipe
+RECIPES = {('strawb', 'strawb', 'strawb'):10,
+           ('strawb', 'strawb', 'strawb', 'strawb'):30,
+           ('kiwi', 'kiwi', 'kiwi'):10,
+           ('kiwi', 'kiwi', 'kiwi', 'kiwi'):30,
+           ('blueb', 'blueb', 'blueb'):10,
+           ('blueb', 'blueb', 'blueb', 'blueb'):30
            }
 
 # graphics config

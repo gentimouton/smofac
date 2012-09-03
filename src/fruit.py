@@ -1,15 +1,20 @@
 from constants import FRUIT_COLORS, FONT_SIZE, CELLSIZE
 import pygame
 
+LOOPING = 'looping' # when in the board loop
+LEAVING = 'leaving' # when on (or scheduled for) the exit path, 
+WAITING = 'waiting' # standing still
+
 
 class Fruit(pygame.sprite.Sprite):
     
     def __init__(self, cell, fruit_type, fruit_id):
         self.cell = cell
-        self.fruit_type = fruit_type # 's' for strawberry
+        self.fruit_type = fruit_type # 'strawb' for strawberry
         self.fruit_id = fruit_id
-        self.isleaving = False
+        self.state = LOOPING
         
+        # graphics
         # fill with color and write fruit number 
         self.surf = pygame.Surface((CELLSIZE * 4 / 5, CELLSIZE * 4 / 5))
         self.surf.fill(FRUIT_COLORS[fruit_type])
@@ -23,15 +28,19 @@ class Fruit(pygame.sprite.Sprite):
         
     
     def __repr__(self):
-        return '%s#%d at %s' % (self.fruit_type,
+        return '%s#%d %s at %s' % (self.fruit_type,
                                 self.fruit_id,
+                                self.state,
                                 str(self.cell.coords))
     def __str__(self):
         return self.__repr__()
         
 
     def update(self):
+        """ Reposition the rect to match the fruit's position. """
         left, top = self.cell.coords
-        self.rect = pygame.Rect(left * CELLSIZE + 5, top * CELLSIZE + 5,
-                                CELLSIZE * 4 / 5, CELLSIZE * 4 / 5)
+        self.rect = pygame.Rect(left * CELLSIZE + CELLSIZE / 10 ,
+                                top * CELLSIZE + CELLSIZE / 10,
+                                CELLSIZE * 4 / 5,
+                                CELLSIZE * 4 / 5)
         

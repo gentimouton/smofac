@@ -14,7 +14,7 @@ def main():
     # init all components
     em = EventManager()
     
-    view = PygameDisplay(em)
+    view = PygameDisplay(em) # must be created before the model
     game = Game(em)
     keyboard = InputController(em)
     
