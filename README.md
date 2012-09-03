@@ -14,11 +14,13 @@ Phases
 =====
 
 phase 1
-- 2 recipes (2 and 3 in a row)
+- 2 recipes (3 and 4 in a row)
 - 3 fruit types (R=strawb, G=kiwi, B=blueberry)
 - 1 trap
 - square path
 - no menu
+- score
+- game won when 12 smoothies have been made
 
 
 phase 2

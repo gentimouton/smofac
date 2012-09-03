@@ -3,9 +3,9 @@ import pygame
 
 class Cell(pygame.sprite.Sprite):
     
-    def __init__(self, board, coords, pathdir, istrap):
-        """ 
-        coords are my coordinates.
+    def __init__(self, board, coords, pathdir, isentr=False, isjunc=False,
+                 iswait=False, isexit=False, iskill=False, istrap=False):
+        """ coords are my coordinates.
         pathdir is the direction of the next cell in the path (e.g. DIR_UP).  
         """
         self.left, self.top = self.coords = coords
@@ -56,18 +56,21 @@ class Cell(pygame.sprite.Sprite):
                 myfruit.cell = self.target
                 self.fruit = targetfruit
                 targetfruit.cell = self
-                return True
+                caught = True
             else: # release
                 self.target.fruit = myfruit
                 myfruit.cell = self.target
                 self.fruit = None
-                return False
+                caught = False
         else: # I have no fruit
             if targetfruit: # catch
                 self.fruit = targetfruit
                 self.target.fruit = None
                 targetfruit.cell = self
-                return True
+                caught = True
             else:
-                return False
+                caught = False
+        
+        if caught:
+            pass # TODO: make a sound
             
