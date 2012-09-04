@@ -2,9 +2,9 @@
 # TODO: make a config file
 
 # mechanics config
-SPAWNFREQ = 4
+SPAWNFREQ = 5
 RNGSEED = 0
-MAPNAME = 'small.txt'
+MAPNAME = 'medium.txt'
 
 # map constants
 DIR_UP = 'U'
@@ -18,9 +18,9 @@ DIR_MAP = [DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT]
 # NO FRUIT CAN BE NAMED 'score'!
 FRUIT_LIST = ['strawb', 'kiwi', 'blueb'] 
 # TODO: should be able to specify X,X,X for triple-whatever as a recipe
-RECIPES = {('strawb', 'strawb', 'strawb'):10,
+RECIPES = {#('strawb', 'strawb', 'strawb'):10,
            ('strawb', 'strawb', 'strawb', 'strawb'):30,
-           ('kiwi', 'kiwi', 'kiwi'):10,
+           #('kiwi', 'kiwi', 'kiwi'):10,
            ('kiwi', 'kiwi', 'kiwi', 'kiwi'):30,
            ('blueb', 'blueb', 'blueb'):10,
            ('blueb', 'blueb', 'blueb', 'blueb'):30
