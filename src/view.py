@@ -1,9 +1,10 @@
 from constants import RESOLUTION, BOARD_BGCOLOR, CELLSIZE, FONT_SIZE
-from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent
+from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
+    GameBuiltEvent
 from pygame.sprite import LayeredDirty
-from widgets import TextLabelWidget
+from widgets import TextLabelWidget, RecipesWidget
+import logging
 import pygame
-
 
 
 
@@ -14,7 +15,6 @@ class PygameDisplay:
         pygame.init() # OK to init multiple times
         
         self._em = em
-        self._em.subscribe(BoardBuiltEvent, self.on_board_built)
         
         window = pygame.display.set_mode(RESOLUTION)
         self.window = window
@@ -31,6 +31,8 @@ class PygameDisplay:
         # build GUI
         self.gui = self._build_gui() # return a sprite group
 
+        self._em.subscribe(BoardBuiltEvent, self.on_board_built)
+        self._em.subscribe(GameBuiltEvent, self.on_game_built)
         
 
     def _build_gui(self):
@@ -48,9 +50,25 @@ class PygameDisplay:
                                        bgcolor=(255, 255, 255))
         gui.add(score_widget)
         
+        # TODO: should make and add an empty recipe widget?
+         
         return gui
     
     
+    
+    def on_game_built(self, ev):
+        """ build the recipe GUI """
+        evt_recipe_dict = {RecipeMatchEvent: 'recipe'}
+        rec = pygame.Rect(400, 60, 150, 400)
+        recipe_widget = RecipesWidget(self._em, 
+                                      ev.recipes, 
+                                      evt_recipe_dict, 
+                                      rect=rec, 
+                                      txtcolor=(222,222,222), 
+                                      bgcolor=(0,0,0))
+        self.gui.add(recipe_widget)
+        
+        
     def on_board_built(self, ev):
         """ Build the board background. """
         
@@ -74,7 +92,9 @@ class PygameDisplay:
         
         
     def on_board_update(self, ev):
-        """ Blit the background and the fruit sprites on the window. """
+        """ Blit the background and the fruit sprites on the window. 
+        TODO: this should be triggered at each view frame, not logic frame. 
+        """
 
         #self.window.blit(self.window_bg, (0, 0))
         

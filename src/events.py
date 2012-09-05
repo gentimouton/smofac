@@ -1,4 +1,3 @@
-import logging
 from collections import defaultdict
 
 class Event:
@@ -13,16 +12,21 @@ class BoardBuiltEvent(Event):
         self.height = height
         self.board = board
 
+class GameBuiltEvent():
+    def __init__(self, recipes):
+        self.recipes = recipes
+        
 class BoardUpdatedEvent:
     def __init__(self, fruits):
         self.fruits = fruits
-                
+    
 class FruitSpawnedEvent():
     def __init__(self, fruit):
         self.fruit = fruit
       
 class RecipeMatchEvent():
-    def __init__(self, current_score, recipe_score):
+    def __init__(self, recipe, current_score, recipe_score):
+        self.recipe = recipe
         self.current_score = current_score
         self.recipe_score = recipe_score
 
@@ -40,6 +44,8 @@ class TriggerTrapEvent():
     pass
 
 
+# components subscribed to TickEvent as "input" will be notified first,
+# then components with priority as "model", and finally the rest (views). 
 PRIO_TICK_INPUT = 1
 PRIO_TICK_MODEL = 2
 

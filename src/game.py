@@ -4,7 +4,7 @@ View: score and recipe widgets on the right, board on the left.
 """
 from board import Board
 from constants import MAPNAME, RECIPES
-from events import RecipeMatchEvent
+from events import RecipeMatchEvent, GameBuiltEvent
 import logging
 
 
@@ -39,6 +39,8 @@ class Game:
         self.board = Board(self, em, self.mapname, max_recipe_length)
         
         self._em = em
+        # RECIPES = dict: fruit type tuples -> score
+        em.publish(GameBuiltEvent(RECIPES))  
         
         
     def recipe_match(self, fruit_list):
@@ -81,7 +83,7 @@ class Game:
             else: # either saw a mismatch, or the recipe takes all possible slots
                 # update the score, and process the fruits
                 self.score += score
-                ev = RecipeMatchEvent(self.score, score) # TODO: also add the recipe
+                ev = RecipeMatchEvent(recipe, self.score, score) # TODO: also add the recipe
                 self._em.publish(ev)
                 # tell the board how many fruits to kill
                 return len(recipe)
