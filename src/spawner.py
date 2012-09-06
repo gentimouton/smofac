@@ -26,10 +26,9 @@ class Spawner():
             if self.cell.fruit: # should spawn new fruit, but can't: game over!
                 return True, None
             else: # can spawn: game keeps going
-                fruit_id = self.fruits_spawned
                 random_int = self.rng.randint(0, len(FRUIT_LIST) - 1)
                 fruit_type = FRUIT_LIST[random_int]
-                fruit = Fruit(self.cell, fruit_type, fruit_id)
+                fruit = Fruit(self.cell, fruit_type, self.fruits_spawned)
                 self.cell.fruit = fruit
                 self.spawn_timer = SPAWNFREQ
                 self.fruits_spawned += 1

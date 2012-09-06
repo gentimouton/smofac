@@ -3,8 +3,8 @@ Model: map name, board, scores, and recipes.
 View: score and recipe widgets on the right, board on the left.
 """
 from board import Board
-from constants import MAPNAME, RECIPES
-from events import RecipeMatchEvent, GameBuiltEvent
+from constants import MAPNAME, RECIPES, RECIPES_MADE_WIN_CONDITION
+from events import RecipeMatchEvent, GameBuiltEvent, QuitEvent
 import logging
 
 
@@ -15,6 +15,7 @@ class Game:
         """Create the board from the map. """
         
         self.score = 0
+        self.recipes_made = 0
         self.mapname = MAPNAME 
         
         
@@ -39,8 +40,8 @@ class Game:
         self.board = Board(self, em, self.mapname, max_recipe_length)
         
         self._em = em
-        # RECIPES = dict: fruit type tuples -> score
-        em.publish(GameBuiltEvent(RECIPES))  
+        # RECIPES = dict: tuples of fruit type -> score
+        em.publish(GameBuiltEvent(RECIPES))
         
         
     def recipe_match(self, fruit_list):
@@ -52,7 +53,6 @@ class Game:
         When fruits don't match any recipe or beginning of recipe,
         return 0.
         Some of the fruits in the list may be None: that spot has no fruit.
-        TODO: this does not make 3-in-a-row wait for 4-in-a-row 
         """
         bucket = self.recipes
         best_recipe_score = (None, -1) # store the matching recipe with highest score
@@ -83,7 +83,11 @@ class Game:
             else: # either saw a mismatch, or the recipe takes all possible slots
                 # update the score, and process the fruits
                 self.score += score
-                ev = RecipeMatchEvent(recipe, self.score, score) # TODO: also add the recipe
+                self.recipes_made += 1
+                if self.recipes_made >= RECIPES_MADE_WIN_CONDITION:
+                    ev = QuitEvent()
+                else:
+                    ev = RecipeMatchEvent(recipe, self.score, score)
                 self._em.publish(ev)
                 # tell the board how many fruits to kill
                 return len(recipe)

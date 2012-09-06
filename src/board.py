@@ -1,7 +1,7 @@
 from cell import Cell
-from constants import RECIPES, DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT
+from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT
 from events import BoardBuiltEvent, TickEvent, BoardUpdatedEvent, \
-    PRIO_TICK_MODEL, RecipeMatchEvent
+    PRIO_TICK_MODEL
 from fruit import LEAVING, LOOPING, WAITING
 from input import TriggerTrapEvent
 from spawner import Spawner
@@ -14,7 +14,7 @@ class Board():
     
     def __init__(self, game, em, mapname, waitzone_length):
         """ Build the board. 
-        TODO: cells in the waitzone should have a different color.
+        TODO: cells in the waitzone should have a different color?
         """
         
         self.mapname = mapname
@@ -27,7 +27,7 @@ class Board():
         self._build_path()
         self.waitzone_length = waitzone_length
         
-        self.fruits = {}
+        self.fruits = set()
         self.spawner = Spawner(em, self.E)
 
         self._em = em
@@ -199,10 +199,8 @@ class Board():
         # blender/kill cell
         kfruit = self.K.fruit
         if kfruit: # to the blender!
-            del self.fruits[kfruit.fruit_id]
-            logging.debug('removed fruit#%d - %s, now have fruits %s' 
-                         % (kfruit.fruit_id, kfruit.fruit_type,
-                            ','.join([str(k) for k in self.fruits.keys()])))
+            self.fruits.remove(kfruit)
+            logging.debug('removed fruit: %s' % (kfruit))
             self.K.fruit = None
             
         # exit cells
@@ -304,14 +302,14 @@ class Board():
         spawned, fruit = self.spawner.tick(tickevt.loopduration)
         if spawned:
             if fruit:
-                self.fruits[fruit.fruit_id] = fruit # TODO: this is disgusting!
+                self.fruits.add(fruit)
             else:
                 logging.info('game over') # TODO: QuitEvent
         
-        for fruit in self.fruits.values():
+        for fruit in self.fruits:
             fruit.update() # eventually move
         
-        ev = BoardUpdatedEvent(self.fruits.values())
+        ev = BoardUpdatedEvent(self.fruits)
         self._em.publish(ev)
 
 

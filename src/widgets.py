@@ -174,7 +174,7 @@ class RecipesWidget(Widget):
         """ Highlight the recipe that just got matched. """        
         evt_recipe_attr = self.events_attrs[event.__class__]
         recipe = str(getattr(event, evt_recipe_attr))
-        
+        logging.info('Should blink %s' % str(recipe))
         
         
     def update(self):

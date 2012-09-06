@@ -9,27 +9,38 @@ Concept: Fruits appear from a door, and travel on a conveyor path throughout the
 
 
 
+License
+====
+
+GPL
+
+
+
 
 Phases
 =====
 
 phase 1
 - 2 recipes (3 and 4 in a row)
-- 3 fruit types (R=strawb, G=kiwi, B=blueberry)
+- 4 fruit types (R=strawb, G=kiwi, B=blueberry, J=banana)
 - 1 trap
 - square path
-- no menu
-- score
-- game won when 12 smoothies have been made
+- 2 levels (each won when 8 smoothies have been made) 
+- basic transitions between levels
+- player score carried along levels
+- pre-game menu boxes: 'play game' and 'quit'
+- executable (py2exe for Windows, ??? for Linux)
 
 
 phase 2
-- UI menus, configs (frame rate, sound, controls)
+- fancier pre-game UI menus: 'config' and '2 player', with img background
+- config for frame rate, sound, and controls 
+- 2-player: shared screen, one player controls traps inside the loop, the other controls traps outside the loop (so when there's a fork in the path, only one player can handle a branch but not the other)
 - sound effects and music
 - 6 recipes
 - multiple types of traps (store multiple fruits, teleport fruits to another trap's cell)
-- 2-player: shared screen, one player controls traps inside the loop, the other controls traps outside the loop (so when there's a fork in the path, only one player can handle a branch but not the other)
 - power-up: slow down the conveyor 
+- pause the game
 
 
 phase 3
