@@ -2,7 +2,6 @@ from cell import Cell
 from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT
 from events import BoardBuiltEvent, TickEvent, BoardUpdatedEvent, \
     PRIO_TICK_MODEL
-from fruit import LEAVING, LOOPING, WAITING
 from input import TriggerTrapEvent
 from spawner import Spawner
 import logging
@@ -197,108 +196,87 @@ class Board():
         """ move the fruits """
         
         # blender/kill cell
-        kfruit = self.K.fruit
+        kcell = self.K
+        kfruit = kcell.fruit
         if kfruit: # to the blender!
             self.fruits.remove(kfruit)
             logging.debug('removed fruit: %s' % (kfruit))
-            self.K.fruit = None
+            kcell.empty()
             
         # exit cells
-        cell = self.K.prevcell
-        while cell != None: # X.prevcell is None
-            if cell.fruit:
-                cell.nextcell.fruit = cell.fruit
-                cell.fruit.cell = cell.nextcell
-                cell.fruit = None
+        cell = kcell.prevcell
+        while cell != None: # stops at X.prevcell, which is None
+            cell.progress_fruit()
             cell = cell.prevcell
 
-        # waiting cell. 
+        # waiting cell
         wcell = self.W
         wfruit = wcell.fruit
+        xcell = self.X
         # Stashing a fruit allows a full loop area to still be able to move.
         stashed_fruit = None
         if wfruit:
-            wstate = wfruit.state
-            if wstate == LEAVING: # part of a leaving recipe: kick it out!
-                self.X.fruit = wfruit
-                wfruit.cell = self.X
-                wcell.fruit = None
-            
+            if wfruit.is_leaving: # part of a leaving recipe: kick it out!
+                wcell.progress_fruit(xcell)
             else: # wfruit is not leaving
                 # get all the fruits in the waiting cells
-                fruit_list = []
-                tmp_cell = wcell
-                for i in range(self.waitzone_length):
-                    fruit_list.append(tmp_cell.fruit)
-                    tmp_cell = tmp_cell.prevcell
+                wzone_fruits = self._get_waitingzone_fruits()
                 # ask the game if there's any recipe matching
-                num_fruits_to_kill = self.game.recipe_match(fruit_list)
+                num_fruits_to_kill = self.game.recipe_match(wzone_fruits)
                 
                 if num_fruits_to_kill == -1:# beginning of a match 
                     # all fruits until the hole must wait
-                    tmp_fruit = wfruit
-                    while tmp_fruit: # at the hole, fruit == None
-                        tmp_fruit.state = WAITING
-                        tmp_fruit = tmp_fruit.cell.prevcell.fruit
-                    # fruits after the hole should be LOOPING
-                
+                    for fruit in wzone_fruits:
+                        if fruit:
+                            fruit.wait()
+                        else:    
+                            break # fruits after the hole remain looping                            
+                    
                 elif num_fruits_to_kill == 0: # no recipe match: keep moving!
-                    wcell.fruit = None
-                    for tmp_fruit in fruit_list:
-                        if tmp_fruit:
-                            tmp_fruit.state = LOOPING
+                    wcell.empty()
                     stashed_fruit = wfruit # stash wfruit to allow for loop movement
-                
+                    for fruit in wzone_fruits:
+                        if fruit:
+                            fruit.loop()
+                        else:
+                            break # fruits after the hole are looping already
+                    
                 elif num_fruits_to_kill > 0: # recipe match!
-                    for i in range(num_fruits_to_kill): # exit some fruits
-                        tmp_fruit = fruit_list[i]
-                        tmp_fruit.state = LEAVING
-                    for i in range(num_fruits_to_kill, self.waitzone_length): # keep the others moving
-                        tmp_fruit = fruit_list[i]
-                        if tmp_fruit:
-                            tmp_fruit.state = LOOPING
-                    wfruit.cell = self.X # wfruit takes the exit path
-                    self.X.fruit = wfruit
-                    wcell.fruit = None
-
-        else: # no fruit
-            pass # nothing to do
-        
+                    # exit some fruits
+                    for i in range(num_fruits_to_kill): 
+                        wzone_fruits[i].leave()
+                    # the other fruits keep looping
+                    for i in range(num_fruits_to_kill, self.waitzone_length): 
+                        fruit = wzone_fruits[i] # None if hole
+                        if fruit:
+                            fruit.loop()
+                        else:
+                            break # fruits after the hole are looping already
+                    wcell.progress_fruit(xcell)# wfruit takes the exit path
+                    
         # looping cells
-        cell = self.W.prevcell
-        while cell != self.W:
-            if cell.fruit and cell.fruit.state != WAITING: 
-                # WAITING fruits must not move
-                cell.nextcell.fruit = cell.fruit
-                cell.fruit.cell = cell.nextcell
-                cell.fruit = None
+        cell = wcell.prevcell
+        while cell != wcell:
+            fruit = cell.fruit
+            if fruit and not fruit.is_waiting: # waiting fruits don't move
+                cell.progress_fruit()
             cell = cell.prevcell
         
-        # now we can loop the stashed fruit from W, if any
+        # now we can put the stashed fruit (if any) back in the loop
         if stashed_fruit:
-            self.W.nextcell.fruit = stashed_fruit
-            stashed_fruit.cell = self.W.nextcell
+            wcell.nextcell.set_fruit(stashed_fruit, wcell)
             
         # entrance cells
-        if self.J.fruit:
-            if self.J.nextcell.fruit:
-                pass # TODO: sprite should be "standing" instead of "walking"
-            else: # join the loop
-                self.J.nextcell.fruit = self.J.fruit
-                self.J.fruit.cell = self.J.nextcell
-                self.J.fruit = None
-        cell = self.J.prevcell
+        cell = self.J
         while cell != None: # None = E.prevcell
             if cell.fruit:
                 if cell.nextcell.fruit:
-                    pass # TODO: "standing" sprite 
-                else: # no fruit ahead: move
-                    cell.nextcell.fruit = cell.fruit
-                    cell.fruit.cell = cell.nextcell
-                    cell.fruit = None
+                    pass # TODO: "standing" sprite instead of "walking" 
+                else: # no fruit ahead: can move
+                    cell.progress_fruit()
             cell = cell.prevcell
 
-        # tick the fruit spawner - must happen after all moves have been resolved        
+        # tick the fruit spawner; must happen after all moves have been resolved        
         spawned, fruit = self.spawner.tick(tickevt.loopduration)
         if spawned:
             if fruit:
@@ -307,12 +285,20 @@ class Board():
                 logging.info('game over') # TODO: QuitEvent
         
         for fruit in self.fruits:
-            fruit.update() # eventually move
+            fruit.update() # graphics
         
         ev = BoardUpdatedEvent(self.fruits)
         self._em.publish(ev)
 
 
+    def _get_waitingzone_fruits(self):
+        """ Return the fruits in the waiting cells """
+        fruit_list = []
+        tmp_cell = self.W
+        for _ in range(self.waitzone_length):
+            fruit_list.append(tmp_cell.fruit) # fruit can be None
+            tmp_cell = tmp_cell.prevcell
+        return fruit_list
 
 
     def on_triggertrap(self, inputevt):

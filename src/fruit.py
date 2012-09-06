@@ -35,7 +35,19 @@ class Fruit(pygame.sprite.Sprite):
     def __str__(self):
         return self.__repr__()
         
-
+    @property
+    def is_leaving(self):
+        return self.state == LEAVING
+    def leave(self):
+        self.state = LEAVING
+    @property
+    def is_waiting(self):
+        return self.state == WAITING
+    def wait(self):
+        self.state = WAITING 
+    def loop(self):
+        self.state = LOOPING
+        
     def update(self):
         """ Reposition the rect to match the fruit's position. """
         left, top = self.cell.coords

@@ -1,4 +1,5 @@
 from constants import DIR_MAP, CELLSIZE
+import logging
 import pygame
 
 class Cell(pygame.sprite.Sprite):
@@ -44,6 +45,35 @@ class Cell(pygame.sprite.Sprite):
         its target is the cell it is stealing from. """
         self.target = targetcell
         
+        
+    def empty(self):
+        """ Remove my fruit """
+        self.fruit = None
+    def set_fruit(self, fruit, origin):
+        """ Add a fruit to my cell. origin = cell of origin. 
+        TODO: interpolate pos of fruit spr between self and origin.
+        """
+        if self.fruit:
+            logging.error('Trying to add fruit %s to cell %s,'\
+                          + ' but it already has fruit %s'
+                          % (fruit, self, self.fruit))
+        # replace in any case
+        self.fruit = fruit
+        fruit.cell = self
+    
+    def progress_fruit(self, cell=None):
+        """ Move my fruit to the next cell. 
+        If a cell is specified, move it to that cell instead. 
+        TODO: interpolate pos of fruit spr between target_cell and self.
+        """
+        myfruit = self.fruit
+        if myfruit:
+            target_cell = cell or self.nextcell
+            target_cell.fruit = myfruit
+            myfruit.cell = target_cell
+            self.fruit = None
+    
+            
     def trap(self):
         """ try to catch/drop/swap a fruit from/to/with the target cell.
         Return whether the trap has a fruit in the end.
