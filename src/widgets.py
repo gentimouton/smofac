@@ -3,7 +3,7 @@ from pygame.font import Font
 from pygame.locals import RLEACCEL, SRCALPHA
 from pygame.rect import Rect
 from pygame.sprite import DirtySprite
-from pygame.surface import Surface, Surface
+from pygame.surface import Surface
 import logging
 
 

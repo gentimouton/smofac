@@ -49,47 +49,79 @@ class TriggerTrapEvent():
 PRIO_TICK_INPUT = 1
 PRIO_TICK_MODEL = 2
 
-
 class EventManager:
-    """ This object coordinates the communication between components.
-    See http://stackoverflow.com/questions/7249388/python-duck-typing-for-mvc-event-handling-in-pygame
-    """
-
+    
     def __init__(self):
-        """ Make 4 lists of callbacks:
+        """ Make 4 sets of callbacks:
         1 for input components(= controllers), they have to be ticked first,
         1 for the model components, ticked just after,
         and 1 for the rendering/view components, ticked at the end.
         Last list = non-tick events.
         """
-        self._ctrlers_callbacks = defaultdict(list)
-        self._models_callbacks = defaultdict(list)
-        self._views_callbacks = defaultdict(list)
-        self._callbacks = defaultdict(list)
-
+        self._c_callbacks = set() # controller callbacks for tick event
+        self._tc_callbacks = set() # temporary controller callbacks
         
+        self._m_callbacks = set() # model
+        self._tm_callbacks = set()
+        
+        self._v_callbacks = set() # view
+        self._tv_callbacks = set()
+        
+        self._callbacks = defaultdict(set) # map non-tick events to their callbacks
+        self._tmp_callbacks = defaultdict(set)
+        
+
     def subscribe(self, ev_class, callback, priority=None):
         """ Register a callback for a particular event. """
         if ev_class == TickEvent:
             if priority == PRIO_TICK_INPUT:
-                self._ctrlers_callbacks[ev_class].append(callback)
+                self._tc_callbacks.add(callback)
             elif priority == PRIO_TICK_MODEL:
-                self._models_callbacks[ev_class].append(callback)
+                self._tm_callbacks.add(callback)
             else: # views/renderers
-                self._views_callbacks[ev_class].append(callback)
+                self._tv_callbacks.add(callback)
         else:# non-tick events
-            self._callbacks[ev_class].append(callback)
+            self._callbacks[ev_class].add(callback)
+        
         
     def publish(self, event):
-        """ Publish an event. """
+        """ Publish an event. 
+        Tick events go first to controllers, then models, then views.
+        """
         ev_class = event.__class__
         if ev_class == TickEvent:
-            for cb in self._ctrlers_callbacks[ev_class]:
+            # iterate over the callbacks: new callbacks will be added to _tc_... 
+            for cb in self._c_callbacks:
                 cb(event)
-            for cb in self._models_callbacks[ev_class]:
+            for cb in self._m_callbacks:
                 cb(event)
-            for cb in self._views_callbacks[ev_class]:
+            for cb in self._v_callbacks:
                 cb(event)
+                
+            # iterate over the new callbacks
+            while self._tc_callbacks or self._tm_callbacks or self._tv_callbacks:
+                # incorporate the new callbacks
+                self._c_callbacks = self._c_callbacks.union(self._tc_callbacks)
+                self._m_callbacks = self._m_callbacks.union(self._tm_callbacks)
+                self._v_callbacks = self._v_callbacks.union(self._tv_callbacks)
+                # copy the new callback sets
+                c_cbs_cpy = self._tc_callbacks # controller callbacks copy
+                m_cbs_cpy = self._tm_callbacks
+                v_cbs_cpy = self._tv_callbacks
+                # empty the new callback sets
+                self._tc_callbacks = set()
+                self._tm_callbacks = set()
+                self._tv_callbacks = set()
+                # iterate over the copies
+                for cb in c_cbs_cpy:
+                    cb(event)# might add new subscriber callbacks to self._t?_callbacks
+                for cb in m_cbs_cpy:
+                    cb(event)
+                for cb in v_cbs_cpy:
+                    cb(event)
+                    
         else: # non-tick event
             for cb in self._callbacks[ev_class]:
                 cb(event)
+            # TODO: non-tick events may have the same problem as tick events
+            # So there may need to be the same structure of set-copies.

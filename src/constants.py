@@ -3,7 +3,7 @@
 
 # mechanics config
 SPAWNFREQ = 4
-RNGSEED = 0
+RNGSEED = 1
 MAPNAME = 'medium.txt'
 RECIPES_MADE_WIN_CONDITION = 8 # how many recipes to make to win 
 

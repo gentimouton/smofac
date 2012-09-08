@@ -34,7 +34,6 @@ class Board():
         em.subscribe(TickEvent, self.on_tick, PRIO_TICK_MODEL)
         
         # notify that the board is built
-        logging.info('Board built')
         ev = BoardBuiltEvent(self.width, self.height, self)
         em.publish(ev)
         

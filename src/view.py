@@ -1,6 +1,6 @@
 from constants import RESOLUTION, BOARD_BGCOLOR, CELLSIZE, FONT_SIZE
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
-    GameBuiltEvent
+    GameBuiltEvent, TickEvent
 from pygame.sprite import LayeredDirty
 from widgets import TextLabelWidget, RecipesWidget
 import logging
@@ -22,19 +22,21 @@ class PygameDisplay:
         
         # blit the bg screen: all black
         bg = pygame.Surface(window.get_size()) 
-        bgcolor = (0, 0, 0)
-        bg.fill(bgcolor)
+        bg.fill((0, 0, 0))
         bg = bg.convert()
         self.window_bg = bg 
         self.window.blit(bg, (0, 0))
         
         # build GUI
+        self.fruit_sprites = LayeredDirty() # only reblit when dirty=1
         self.gui = self._build_gui() # return a sprite group
 
-        self._em.subscribe(BoardBuiltEvent, self.on_board_built)
-        self._em.subscribe(GameBuiltEvent, self.on_game_built)
+        em.subscribe(TickEvent, self.on_tick)
+        em.subscribe(BoardBuiltEvent, self.on_board_built)
+        em.subscribe(GameBuiltEvent, self.on_game_built)
         
-
+        
+        
     def _build_gui(self):
         """ Add a score widget on the right """
         
@@ -58,6 +60,7 @@ class PygameDisplay:
     
     def on_game_built(self, ev):
         """ build the recipe GUI """
+        
         evt_recipe_dict = {RecipeMatchEvent: 'recipe'}
         rec = pygame.Rect(400, 60, 150, 400)
         recipe_widget = RecipesWidget(self._em, 
@@ -82,34 +85,41 @@ class PygameDisplay:
         for left in range(width):
             for top in range(height):
                 cell = board.get_cell(left, top)
-                bg.blit(cell.surf, cell.rect)
-        
-        self.board_bg = bg
-        self.window.blit(bg, (0, 0))
+                bg.blit(cell.image, cell.rect)
+        # blit the board bg onto the window's bg
+        self.window_bg.blit(bg, (0,0))
         
         self._em.subscribe(BoardUpdatedEvent, self.on_board_update)
 
         
         
     def on_board_update(self, ev):
-        """ Blit the background and the fruit sprites on the window. 
-        TODO: this should be triggered at each view frame, not logic frame. 
+        """ Store the new fruits' positions. 
+        The actual display happens at clock tick. 
         """
+        for fruit in ev.fruits:
+            self.fruit_sprites.add(fruit)
+        
 
-        #self.window.blit(self.window_bg, (0, 0))
+        
+    def on_tick(self, ev):
+        """ Blit the board (+ fruits and traps) and the GUI on the screen. """
         
         # board
-        self.window.blit(self.board_bg, (0, 0))
-        for fruit in ev.fruits:
-            self.window.blit(fruit.surf, fruit.rect)
-            
+        for fruit in self.fruit_sprites:# TODO: should be a dirty group
+            self.window.blit(fruit.image, fruit.rect)
+    
         # GUI
         gui = self.gui
+        fruits = self.fruit_sprites
         gui.clear(self.window, self.window_bg) # clear the window from all the sprites, replacing them with the bg
+        fruits.clear(self.window, self.window_bg)
         gui.update() # calls update() on each sprite of the groups
+        fruits.update()
         dirty_gui = gui.draw(self.window) #collect the display areas that need to be redrawn 
-        pygame.display.update(dirty_gui) # redisplay those areas only
+        dirty_fruits = fruits.draw(self.window)
+        dirty_rects = dirty_gui + dirty_fruits
+        pygame.display.update(dirty_rects) # redisplay those areas only
         
         # flip the screen
         pygame.display.flip()
-    

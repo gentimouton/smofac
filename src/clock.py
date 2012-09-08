@@ -1,6 +1,7 @@
 from constants import FPS
 from events import QuitEvent, TickEvent
 from time import sleep, time
+import logging
 
 
 
@@ -20,22 +21,23 @@ class Clock():
         Frames with more work may take longer than the specified frame rate. 
         """
         self.keep_going = True
-        beforetick = aftertick = time()
-        
+        sleepduration = workduration = 0
+                
         while self.keep_going:
+            beforetick = time()
+            wholeduration = (sleepduration + workduration)
+            event = TickEvent(wholeduration * 1000, workduration * 1000)
+            self._em.publish(event) # tick all registered components
+
+            aftertick = time()
             workduration = aftertick - beforetick #0 on first tick
             sleepduration = 1 / self.fps - workduration
             sleepduration = max(0, sleepduration)# dont sleep if late
             if sleepduration > 0: 
                 sleep(sleepduration)
-                
-            beforetick = time()
-            wholeduration = (sleepduration + workduration)
-            event = TickEvent(wholeduration * 1000, workduration * 1000)
-            self._em.publish(event) # tick all registered components
-            aftertick = time()
 
             self.elapsed_frames += 1
+    
 
 
     

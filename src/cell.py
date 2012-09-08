@@ -14,21 +14,21 @@ class Cell(pygame.sprite.Sprite):
         self.pathdir = pathdir # non-null for traps
         self.nextcell = None # will remain None for the exit
         self.prevcell = None # will remain None for the entrance
-        self.fruit = None # TODO: temporary set by the board
+        self.fruit = None # will be set by the board or cells
         self.iswalkable = pathdir in DIR_MAP
         self.istrap = istrap
         
         cspr_left = self.left * CELLSIZE
         cspr_top = self.top * CELLSIZE
         self.rect = pygame.Rect(cspr_left, cspr_top, CELLSIZE, CELLSIZE)
-        self.surf = pygame.Surface((CELLSIZE, CELLSIZE))
+        self.image = pygame.Surface((CELLSIZE, CELLSIZE))
         
         if istrap:
-            self.surf.fill((11, 11, 11))
+            self.image.fill((11, 11, 11))
         elif self.iswalkable:
-            self.surf.fill((255, 255, 255))
+            self.image.fill((255, 255, 255))
         else:
-            self.surf.fill((123, 123, 123))
+            self.image.fill((123, 123, 123))
 
 
     def __str__(self):
@@ -70,7 +70,7 @@ class Cell(pygame.sprite.Sprite):
         if myfruit:
             target_cell = cell or self.nextcell
             target_cell.fruit = myfruit
-            myfruit.cell = target_cell
+            myfruit.move_to(target_cell.coords)
             self.fruit = None
     
             
@@ -79,28 +79,30 @@ class Cell(pygame.sprite.Sprite):
         Return whether the trap has a fruit in the end.
         """
         myfruit = self.fruit
-        targetfruit = self.target.fruit
+        tcell = self.target
+        targetfruit = tcell.fruit
         if myfruit:
             if targetfruit: # swap
-                self.target.fruit = myfruit
-                myfruit.cell = self.target
+                tcell.fruit = myfruit
+                myfruit.move_to(tcell.coords)
                 self.fruit = targetfruit
-                targetfruit.cell = self
+                targetfruit.move_to(self.coords)
                 caught = True
             else: # release
-                self.target.fruit = myfruit
-                myfruit.cell = self.target
+                tcell.fruit = myfruit
+                myfruit.move_to(tcell.coords)
                 self.fruit = None
                 caught = False
         else: # I have no fruit
             if targetfruit: # catch
                 self.fruit = targetfruit
-                self.target.fruit = None
-                targetfruit.cell = self
+                tcell.fruit = None
+                targetfruit.move_to(self.coords)
                 caught = True
             else:
                 caught = False
         
         if caught:
             pass # TODO: make a sound
-            
+        else:
+            pass # TODO: make another sound
