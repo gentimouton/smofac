@@ -1,7 +1,7 @@
 from cell import Cell
 from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT
 from events import BoardBuiltEvent, TickEvent, BoardUpdatedEvent, \
-    PRIO_TICK_MODEL
+    PRIO_TICK_MODEL, FruitKilledEvent
 from input import TriggerTrapEvent
 from spawner import Spawner
 import logging
@@ -199,8 +199,11 @@ class Board():
         kfruit = kcell.fruit
         if kfruit: # to the blender!
             self.fruits.remove(kfruit)
-            logging.debug('removed fruit: %s' % (kfruit))
             kcell.empty()
+            ev = FruitKilledEvent(kfruit)
+            self._em.publish(ev)
+            logging.debug('removed fruit: %s' % (kfruit))
+            
             
         # exit cells
         cell = kcell.prevcell

@@ -1,6 +1,6 @@
 from constants import RESOLUTION, BOARD_BGCOLOR, CELLSIZE, FONT_SIZE
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
-    GameBuiltEvent, TickEvent
+    GameBuiltEvent, TickEvent, FruitKilledEvent
 from pygame.sprite import LayeredDirty
 from widgets import TextLabelWidget, RecipesWidget
 import logging
@@ -34,6 +34,7 @@ class PygameDisplay:
         em.subscribe(TickEvent, self.on_tick)
         em.subscribe(BoardBuiltEvent, self.on_board_built)
         em.subscribe(GameBuiltEvent, self.on_game_built)
+        em.subscribe(FruitKilledEvent, self.on_fruit_kill)
         
         
         
@@ -99,24 +100,26 @@ class PygameDisplay:
         """
         for fruit in ev.fruits:
             self.fruit_sprites.add(fruit)
-        
-
-        
-    def on_tick(self, ev):
-        """ Blit the board (+ fruits and traps) and the GUI on the screen. """
-        
-        # board
-        for fruit in self.fruit_sprites:# TODO: should be a dirty group
-            self.window.blit(fruit.image, fruit.rect)
     
-        # GUI
+    def on_fruit_kill(self, ev):
+        """ When a fruit is killed, remove the spr """
+        fruit = ev.fruit
+        fruit.kill()
+        del fruit # needed?
+        
+                
+    def on_tick(self, ev):
+        """ Blit the active board elements and the GUI on the screen. """
+            
         gui = self.gui
         fruits = self.fruit_sprites
-        gui.clear(self.window, self.window_bg) # clear the window from all the sprites, replacing them with the bg
+        # clear the window from all the sprites, replacing them with the bg
+        gui.clear(self.window, self.window_bg) 
         fruits.clear(self.window, self.window_bg)
-        gui.update() # calls update() on each sprite of the groups
+        gui.update() # call update() on each sprite of the group
         fruits.update()
-        dirty_gui = gui.draw(self.window) #collect the display areas that need to be redrawn 
+        #collect the display areas that need to be redrawn
+        dirty_gui = gui.draw(self.window)  
         dirty_fruits = fruits.draw(self.window)
         dirty_rects = dirty_gui + dirty_fruits
         pygame.display.update(dirty_rects) # redisplay those areas only

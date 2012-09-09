@@ -55,7 +55,7 @@ class Fruit(DirtySprite):
         self.state = LOOPING
     
     def move_to(self, cell_coords):
-        self.cel_coords = left, top = cell_coords
+        left, top = cell_coords
         self.rect = Rect(left * CELLSIZE + CELLSIZE / 10 ,
                          top * CELLSIZE + CELLSIZE / 10,
                          CELLSIZE * 4 / 5,

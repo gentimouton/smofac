@@ -54,7 +54,7 @@ FRUIT_COLORS = {'S': (222, 55, 55),
                'B': (55, 55, 222),
                'J': (222, 222, 22)
                }
-FPS = 3
+FPS = 4
 BOARD_BGCOLOR = (33, 33, 33)
 CELLSIZE = 50
 RESOLUTION = (800, 600)

@@ -49,6 +49,7 @@ class Cell(pygame.sprite.Sprite):
     def empty(self):
         """ Remove my fruit """
         self.fruit = None
+        
     def set_fruit(self, fruit, origin):
         """ Add a fruit to my cell. origin = cell of origin. 
         TODO: interpolate pos of fruit spr between self and origin.
@@ -59,7 +60,8 @@ class Cell(pygame.sprite.Sprite):
                           % (fruit, self, self.fruit))
         # replace in any case
         self.fruit = fruit
-        fruit.cell = self
+        fruit.move_to(self.coords)
+
     
     def progress_fruit(self, cell=None):
         """ Move my fruit to the next cell. 

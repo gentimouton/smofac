@@ -23,7 +23,11 @@ class BoardUpdatedEvent:
 class FruitSpawnedEvent():
     def __init__(self, fruit):
         self.fruit = fruit
-      
+
+class FruitKilledEvent():
+    def __init__(self, fruit):
+        self.fruit = fruit
+              
 class RecipeMatchEvent():
     def __init__(self, recipe, current_score, recipe_score):
         self.recipe = recipe
