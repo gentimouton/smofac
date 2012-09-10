@@ -21,7 +21,10 @@ class Board():
         
         loaded_map = self._load_mapfile(mapname)
         self.height, self.width, self._cellgrid = loaded_map[0:3]
-        self.E, self.J, self.W, self.X, self.K, self.T = loaded_map[3:] 
+        waypoints = loaded_map[3:]
+        self.E, self.J, self.W, self.X, self.K, self.T = waypoints
+        if None in waypoints:
+            logging.critical('A waypoint cell is missing.')
         
         self._build_path()
         self.waitzone_length = waitzone_length
@@ -152,9 +155,10 @@ class Board():
             cell = nextcell
 
         # wire the trap
-        target_coords = self._get_coords_from_dir(self.T.coords, self.T.pathdir)
+        trap = self.T
+        target_coords = self._get_coords_from_dir(trap.coords, trap.pathdir)
         target_cell = self.get_cell(target_coords)
-        self.T.set_target(target_cell)        
+        trap.set_target(target_cell)        
 
     
     def get_cell(self, lefttop, top=None):

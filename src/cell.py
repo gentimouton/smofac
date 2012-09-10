@@ -1,4 +1,4 @@
-from constants import DIR_MAP, CELLSIZE
+from constants import DIR_MAP, CELLSIZE, TRAP_COLOR, PATH_COLOR, BG_COLOR
 import logging
 import pygame
 
@@ -24,11 +24,11 @@ class Cell(pygame.sprite.Sprite):
         self.image = pygame.Surface((CELLSIZE, CELLSIZE))
         
         if istrap:
-            self.image.fill((11, 11, 11))
+            self.image.fill(TRAP_COLOR)
         elif self.iswalkable:
-            self.image.fill((255, 255, 255))
+            self.image.fill(PATH_COLOR)
         else:
-            self.image.fill((123, 123, 123))
+            self.image.fill(BG_COLOR)
 
 
     def __str__(self):
