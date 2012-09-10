@@ -1,7 +1,7 @@
 from cell import Cell
-from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT
+from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT, FRUIT_SPEED
 from events import BoardBuiltEvent, TickEvent, BoardUpdatedEvent, \
-    PRIO_TICK_MODEL, FruitKilledEvent
+    PRIO_TICK_MODEL, FruitKilledEvent, AccelerateFruitsEvent, DecelerateFruitsEvent
 from input import TriggerTrapEvent
 from spawner import Spawner
 import logging
@@ -27,11 +27,16 @@ class Board():
         self.waitzone_length = waitzone_length
         
         self.fruits = set()
+        self.fruit_speed = FRUIT_SPEED # in cells per second
+        self.fruit_mvt_timer = 1000. / self.fruit_speed # decreased each clock tick 
+        # When it reaches zero or below, move the fruits.
         self.spawner = Spawner(em, self.E)
 
         self._em = em
         em.subscribe(TriggerTrapEvent, self.on_triggertrap)
         em.subscribe(TickEvent, self.on_tick, PRIO_TICK_MODEL)
+        em.subscribe(AccelerateFruitsEvent, self.on_faster_fruits)
+        em.subscribe(DecelerateFruitsEvent, self.on_slower_fruits)
         
         # notify that the board is built
         ev = BoardBuiltEvent(self.width, self.height, self)
@@ -192,7 +197,18 @@ class Board():
     
     
     def on_tick(self, tickevt):
-        """ move the fruits """
+        """ Move the fruits if it's time to do so. """
+        
+        elapsed_millis = tickevt.loopduration
+        self.fruit_mvt_timer -= elapsed_millis
+        if self.fruit_mvt_timer <= 0:
+            self._progress_fruits()
+            self.fruit_mvt_timer = 1000. / self.fruit_speed
+            
+            
+            
+    def _progress_fruits(self):
+        """ Make the fruits move on the board. """
         
         # blender/kill cell
         kcell = self.K
@@ -279,7 +295,7 @@ class Board():
             cell = cell.prevcell
 
         # tick the fruit spawner; must happen after all moves have been resolved        
-        spawned, fruit = self.spawner.tick(tickevt.loopduration)
+        spawned, fruit = self.spawner.tick()
         if spawned:
             if fruit:
                 self.fruits.add(fruit)
@@ -291,6 +307,7 @@ class Board():
         
         ev = BoardUpdatedEvent(self.fruits)
         self._em.publish(ev)
+
 
 
     def _get_waitingzone_fruits(self):
@@ -307,4 +324,13 @@ class Board():
         """ User pushed the trap key. Try to trap a fruit. """
         caught = self.T.trap()
         
+        
+        
+    def on_faster_fruits(self, ev):
+        """ Increase the speed of the fruits """
+        self.fruit_speed += .2 # by 0.2 cell per sec
+
+    def on_slower_fruits(self, ev):
+        """ Decrease the speed of fruits """
+        self.fruit_speed -= .2
         

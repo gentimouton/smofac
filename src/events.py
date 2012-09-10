@@ -47,6 +47,13 @@ class TriggerTrapEvent():
     # player pushed the trap key
     pass
 
+class AccelerateFruitsEvent:
+    #accelerate the speed of the fruits
+    pass
+class DecelerateFruitsEvent:
+    #accelerate the speed of the fruits
+    pass
+
 
 # components subscribed to TickEvent as "input" will be notified first,
 # then components with priority as "model", and finally the rest (views). 

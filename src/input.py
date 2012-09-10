@@ -1,5 +1,7 @@
-from events import QuitEvent, TriggerTrapEvent, TickEvent, PRIO_TICK_INPUT
-from pygame.locals import KEYDOWN, K_ESCAPE, QUIT, K_SPACE
+from events import QuitEvent, TriggerTrapEvent, TickEvent, PRIO_TICK_INPUT, \
+    AccelerateFruitsEvent, DecelerateFruitsEvent
+from pygame.locals import KEYDOWN, K_ESCAPE, QUIT, K_SPACE, K_EQUALS, K_PLUS, \
+    K_MINUS, K_UNDERSCORE
 import logging
 import pygame
 
@@ -32,6 +34,12 @@ class InputController:
                 
                 elif key == K_SPACE:
                     ev = TriggerTrapEvent()
+                    
+                elif key in (K_EQUALS, K_PLUS):
+                    # accelerate the speed of the fruits
+                    ev = AccelerateFruitsEvent()
+                elif key in (K_MINUS, K_UNDERSCORE):
+                    ev = DecelerateFruitsEvent()
             
             # if the pygame event generated a game event, send it          
             if ev:

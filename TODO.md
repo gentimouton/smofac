@@ -2,13 +2,18 @@
 Refactoring/cleaning
 ===
 
-- Logic in board/game/fruits/cell
-- GUI
-- decouple view tick and logic tick
+- in the GUI, sort recipes in some way (e.g. by length then color)  
+- cleaner GUI: 600x600 of centered board, 200x600 of right panel
 
 
 Features
 ===
+
+- CPU consumption widget just for giggles
+- smooth movement
+- trap holding 2 fruits in the center of the board
+- menus: look at PVZ and angryDD
+- game over/won and level transitions
 
 - board background
 - loading cells background?
@@ -16,10 +21,5 @@ Features
 - fruit spr and animations
 - MIDI bgm 
 - sound effects
-- smooth movement
-- menus: look at PVZ and angryDD
-- game over/won and level transitions
-- executable
 - 2 traps
 - 2 players
-- traps holding 2+ fruits

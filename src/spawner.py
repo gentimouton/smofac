@@ -14,11 +14,11 @@ class Spawner():
         self._em = em
         
         
-    def tick(self, elapsed_millis):
+    def tick(self):
         """ Spawn a fruit if it's time to do it. 
         Return (a, b), where a is whether it had to spawn,
         and b the fruit (if succeeded).
-        elapsed_millis is the time elapsed since last tick.
+        This is called by the board every model tick.
         """
         
         self.spawn_timer -= 1

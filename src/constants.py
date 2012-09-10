@@ -2,8 +2,9 @@
 # TODO: make a config file
 
 # mechanics config
-SPAWNFREQ = 4
-RNGSEED = 1
+SPAWNFREQ = 3 # spawn 1 fruit every how many cells?
+FRUIT_SPEED = 3 # in cells per second
+RNGSEED = 10
 MAPNAME = 'medium.txt'
 RECIPES_MADE_WIN_CONDITION = 8 # how many recipes to make to win 
 
@@ -54,7 +55,7 @@ FRUIT_COLORS = {'S': (222, 55, 55),
                'B': (55, 55, 222),
                'J': (222, 222, 22)
                }
-FPS = 4
+FPS = 60
 BOARD_BGCOLOR = (33, 33, 33)
 CELLSIZE = 50
 RESOLUTION = (800, 600)
