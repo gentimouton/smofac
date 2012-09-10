@@ -8,7 +8,7 @@ import logging
 
 
 class Widget(DirtySprite):
-    """ abstract class for other types of widgets """
+    """ abstract class for widgets """
 
     def __init__(self, em):
         DirtySprite.__init__(self)
@@ -106,7 +106,8 @@ class RecipesWidget(Widget):
         """ Representation of the recipes and their score.
         When receiving a recipe match event, blink the recipe.
         events_attrs maps event classes to recipe attributes. 
-        Usage: RecipesWidget(em, recipes_to_display, {EventName: 'recipe_attr'})  
+        Usage: RecipesWidget(em, recipes_to_display, {EventName: 'recipe_attr'})
+        recipes maps tuples of fruit type to their score.  
         """
 
         Widget.__init__(self, em)
@@ -117,6 +118,11 @@ class RecipesWidget(Widget):
             self._em.subscribe(evtClass, self.on_recipe_match)
         
         self.recipes = recipes
+        
+        # sort recipes by length, then score, then color 
+        ord_recipes = list(zip(recipes.keys(), recipes.values())) 
+        ord_recipes.sort(key=lambda pair: (len(pair[0]), pair[1], pair[0][0]))
+
         
         # gfx
         font_size = FONT_SIZE
@@ -136,9 +142,9 @@ class RecipesWidget(Widget):
         widget_surf = Surface(self.rect.size)
         
         # recipe lines
-        self.recipe_lines = []
+        self.recipe_lines = {}
         recipe_num = 0
-        for recipe, score in recipes.items():
+        for recipe, score in ord_recipes:
             # blit fruit surfs and recipe surf on line surf
             line_rect = Rect(0, recipe_num * font_size + 10, # 10px between lines
                              self.rect.width, font_size)
@@ -161,8 +167,8 @@ class RecipesWidget(Widget):
                 line_surf.blit(fruit_surf, fruit_rect)
             
             # store the line so that we can blink/reblit it
-            recipe_line = {'recipe': recipe, 'score':score, 'rect': line_rect}
-            self.recipe_lines.append(recipe_line) 
+            recipe_line = {'score':score, 'rect': line_rect}
+            self.recipe_lines[recipe] = recipe_line 
                 
             widget_surf.blit(line_surf, line_rect)
             recipe_num += 1
@@ -174,14 +180,10 @@ class RecipesWidget(Widget):
         """ Highlight the recipe that just got matched. """        
         evt_recipe_attr = self.events_attrs[event.__class__]
         recipe = str(getattr(event, evt_recipe_attr))
-        logging.info('Should blink %s' % str(recipe))
         
         
     def update(self):
-        
-        if self.dirty == 0:
-            return
-        
-        # TODO: is bliting on existing surf faster than creating a new surface?
-        
-        #self.dirty = 0 # no need to set to 0: this is done by LayeredDirty
+        """ Nothing to do, really ...
+        But widgets in sprite groups need this method.
+        """
+        pass

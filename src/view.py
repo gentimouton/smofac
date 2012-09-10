@@ -64,6 +64,7 @@ class PygameDisplay:
         
         evt_recipe_dict = {RecipeMatchEvent: 'recipe'}
         rec = pygame.Rect(400, 60, 150, 400)
+        # ev.recipes maps tuples of fruit type to score
         recipe_widget = RecipesWidget(self._em, 
                                       ev.recipes, 
                                       evt_recipe_dict, 

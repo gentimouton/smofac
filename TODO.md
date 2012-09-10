@@ -2,7 +2,6 @@
 Refactoring/cleaning
 ===
 
-- in the GUI, sort recipes in some way (e.g. by length then color)  
 - cleaner GUI: 600x600 of centered board, 200x600 of right panel
 
 
