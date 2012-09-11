@@ -306,8 +306,8 @@ class Board():
             else:
                 logging.info('game over') # TODO: QuitEvent
         
-        for fruit in self.fruits:
-            fruit.update() # graphics
+        #for fruit in self.fruits:
+        #    fruit.update() # graphics
         
         ev = BoardUpdatedEvent(self.fruits)
         self._em.publish(ev)

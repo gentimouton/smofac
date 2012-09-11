@@ -39,16 +39,18 @@ class Cell(pygame.sprite.Sprite):
         else:
             fruitdata = 'NOFRUIT'
         return 'Cell: %s' % (str(self.coords)) + fruitdata
-
-    def set_target(self, targetcell):
-        """ When the cell is a trap, 
-        its target is the cell it is stealing from. """
-        self.target = targetcell
-        
-        
+            
+    @property
+    def direction(self):
+        """ Return the direction where the next cell is. """
+        return self.pathdir
+    
+    #################### fruit stuff
+      
     def empty(self):
         """ Remove my fruit """
         self.fruit = None
+        
         
     def set_fruit(self, fruit, origin):
         """ Add a fruit to my cell. origin = cell of origin. 
@@ -60,7 +62,7 @@ class Cell(pygame.sprite.Sprite):
                           % (fruit, self, self.fruit))
         # replace in any case
         self.fruit = fruit
-        fruit.move_to(self.coords)
+        fruit.move_to(self) # TODO: tricky for smooth fruit mvt
 
     
     def progress_fruit(self, cell=None):
@@ -72,34 +74,46 @@ class Cell(pygame.sprite.Sprite):
         if myfruit:
             target_cell = cell or self.nextcell
             target_cell.fruit = myfruit
-            myfruit.move_to(target_cell.coords)
+            myfruit.move_to(target_cell)
             self.fruit = None
     
-            
+    
+    ################# trap stuff
+    
+        
+    def set_target(self, targetcell):
+        """ Called when the board wires the path. 
+        When the cell is a trap, 
+        its target is the cell it is stealing from. """
+        self.target = targetcell
+        
+        
     def trap(self):
         """ try to catch/drop/swap a fruit from/to/with the target cell.
         Return whether the trap has a fruit in the end.
         """
         myfruit = self.fruit
         tcell = self.target
-        targetfruit = tcell.fruit
-        if myfruit:
-            if targetfruit: # swap
+        tfruit = tcell.fruit
+        
+        if myfruit:# TODO: tricky for smooth mvt
+            if tfruit: # swap 
                 tcell.fruit = myfruit
-                myfruit.move_to(tcell.coords)
-                self.fruit = targetfruit
-                targetfruit.move_to(self.coords)
+                myfruit.release(tcell)
+                self.fruit = tfruit
+                tfruit.grab(self)
                 caught = True
             else: # release
                 tcell.fruit = myfruit
-                myfruit.move_to(tcell.coords)
+                myfruit.release(tcell)
                 self.fruit = None
                 caught = False
+                
         else: # I have no fruit
-            if targetfruit: # catch
-                self.fruit = targetfruit
+            if tfruit: # catch
+                self.fruit = tfruit
                 tcell.fruit = None
-                targetfruit.move_to(self.coords)
+                tfruit.grab(self)
                 caught = True
             else:
                 caught = False

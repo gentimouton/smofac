@@ -130,7 +130,7 @@ class PygameDisplay:
         gui.clear(self.window, self.window_bg) 
         fruits.clear(self.window, self.window_bg)
         gui.update() # call update() on each sprite of the group
-        fruits.update()
+        fruits.update(ev.loopduration)
         #collect the display areas that need to be redrawn
         dirty_gui = gui.draw(self.window)  
         dirty_fruits = fruits.draw(self.window)
@@ -139,3 +139,12 @@ class PygameDisplay:
         
         # flip the screen
         pygame.display.flip()
+
+
+
+def main():
+    return # TODO: display the GUI. Close when user presses ESC.
+
+
+if __name__ == "__main__":
+    main()
