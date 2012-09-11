@@ -59,6 +59,10 @@ FPS = 60
 BG_COLOR = (111, 111, 111)
 TRAP_COLOR = (11, 11, 11)
 PATH_COLOR = (233, 233, 233)
-CELLSIZE = 50
+
+# maps are 12x12: 600x600px on the left for the board, 
+# 200x600px on the right for the UI
 RESOLUTION = (800, 600)
+CELLSIZE = 50
+
 FONT_SIZE = 30 # in px

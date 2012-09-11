@@ -2,7 +2,7 @@ from constants import RESOLUTION, BG_COLOR, CELLSIZE, FONT_SIZE
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
     GameBuiltEvent, TickEvent, FruitKilledEvent
 from pygame.sprite import LayeredDirty
-from widgets import TextLabelWidget, RecipesWidget
+from widgets import TextLabelWidget, RecipesWidget, CPUDisplayWidget
 import logging
 import pygame
 
@@ -44,7 +44,8 @@ class PygameDisplay:
         gui = LayeredDirty() # only reblit when dirty=1
         
         # score at top-right of the window
-        rec = pygame.Rect(600, 0, 100, FONT_SIZE * 1.5)
+        rec = pygame.Rect(600 + 10, 0,
+                          100, FONT_SIZE * 1.5)
         evt_txt_dict = {RecipeMatchEvent: 'current_score'}
         score_widget = TextLabelWidget(self._em, '0',
                                        events_attrs=evt_txt_dict,
@@ -52,7 +53,18 @@ class PygameDisplay:
                                        txtcolor=(0, 0, 0),
                                        bgcolor=(222, 222, 222))
         gui.add(score_widget)
-        # recipe widget added when the game is built
+        
+        # CPU at bottom-right of the window
+        rec = pygame.Rect(600 + 10, 600 - FONT_SIZE * 1.5,
+                          100, FONT_SIZE * 1.5)
+        cpu_widget = CPUDisplayWidget(self._em, '0',
+                                      rect=rec,
+                                      txtcolor=(0, 0, 0),
+                                      bgcolor=(222, 222, 222))
+        gui.add(cpu_widget)
+        
+        
+        # the recipe widget added when the game is built
         return gui
     
     

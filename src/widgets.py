@@ -1,4 +1,5 @@
 from constants import FONT_SIZE, FRUIT_COLORS
+from events import TickEvent
 from pygame.font import Font
 from pygame.locals import RLEACCEL, SRCALPHA
 from pygame.rect import Rect
@@ -99,6 +100,85 @@ class TextLabelWidget(Widget):
 
 ##################################
 
+CPU_DISPLAY_FREQ = 2  # how many times per second to update the CPU display 
+
+class CPUDisplayWidget(Widget):
+    """ When receiving a tick event, display CPU consumption, 
+    ie duration of work in the frame divided by total duration of the frame.
+    """ 
+    
+    def __init__(self, em, text, rect=None, txtcolor=(255, 0, 0), bgcolor=None):
+        """ text = to display at the start. """
+        Widget.__init__(self, em)
+        
+        em.subscribe(TickEvent, self.on_tick)
+        self.display_timer = 1000 / CPU_DISPLAY_FREQ # in millis
+        
+        # gfx
+        font_size = FONT_SIZE
+        self.font = Font(None, font_size)
+        if rect:
+            self.rect = rect
+        else:
+            self.rect = Rect((0, 0), (100, font_size + 4)) 
+            #default width = 100px,
+            # 4px from 1px each of border bottom,
+            # padding bottom, padding top, and border top 
+                
+        self.txtcolor = txtcolor
+        self.bgcolor = bgcolor
+
+        self.text = text
+        self.image = Surface(self.rect.size)
+            
+
+    def on_tick(self, ev):
+        """ Widget has to change its text. """        
+        total = ev.loopduration
+        self.display_timer -= total
+        if self.display_timer > 0:
+            return
+        
+        self.display_timer = 1000 / CPU_DISPLAY_FREQ # in millis
+        work = ev.workduration
+        try:
+            self.text = 'CPU: %2d %%' % (int(100 * work / total))
+        except ZeroDivisionError:
+            self.text = '0'
+        self.dirty = 1
+
+        
+    def update(self):
+        
+        if self.dirty == 0:
+            return
+        
+        # TODO: is bliting on existing surf faster than creating a new surface?
+        size = self.rect.size
+        txtcolor = self.txtcolor
+        bgcolor = self.bgcolor
+        if bgcolor: # opaque bg
+            txtimg = self.font.render(self.text, True, txtcolor, bgcolor)
+            txtimg = txtimg.convert()
+            img = Surface(size)
+            img.fill(bgcolor)
+        else: # transparent bg
+            txtimg = self.font.render(self.text, True, txtcolor)
+            txtimg = txtimg.convert_alpha()
+            img = Surface(size, SRCALPHA) # handle transparency
+            img.fill((0, 0, 0, 0)) # 0 = transparent, 255 = opaque
+        
+        # center the txt inside its box
+        ctr_y = size[1] / 2
+        textpos = txtimg.get_rect(left=2, centery=ctr_y)
+        img.blit(txtimg, textpos)
+        self.image = img
+        
+        #self.dirty = 0 # no need to set to 0: this is done by LayeredDirty
+        
+
+########################################    
+    
 class RecipesWidget(Widget):
 
     def __init__(self, em, recipes, events_attrs={}, rect=None,
