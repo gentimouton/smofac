@@ -53,21 +53,14 @@ class TextLabelWidget(Widget):
         self.text = text
         self.image = Surface(self.rect.size)
         
-    
-    def set_text(self, text):
-        self.text = text
-        self.dirty = 1
-
-    def get_text(self):
-        return self.text
-    
 
     def on_textevent(self, event):
         """ Widget has to change its text. """        
         evt_txt_attr = self.events_attrs[event.__class__]
         txt = str(getattr(event, evt_txt_attr))
-        self.set_text(txt)
-        
+        self.text = txt
+        self.dirty = 1
+    
         
     def update(self):
         
@@ -145,15 +138,14 @@ class CPUDisplayWidget(Widget):
             self.text = 'CPU: %2d %%' % (int(100 * work / total))
         except ZeroDivisionError:
             self.text = '0'
-        self.dirty = 1
+        self.dirty = 1 # schedule for reblit
 
         
     def update(self):
-        
+        """ Reblit text if dirty. """
         if self.dirty == 0:
             return
         
-        # TODO: is bliting on existing surf faster than creating a new surface?
         size = self.rect.size
         txtcolor = self.txtcolor
         bgcolor = self.bgcolor
@@ -203,7 +195,6 @@ class RecipesWidget(Widget):
         ord_recipes = list(zip(recipes.keys(), recipes.values())) 
         ord_recipes.sort(key=lambda pair: (len(pair[0]), pair[1], pair[0][0]))
 
-        
         # gfx
         font_size = FONT_SIZE
         self.font = Font(None, font_size)
