@@ -2,7 +2,7 @@
 # TODO: make a config file
 
 # mechanics config
-SPAWNFREQ = 3 # spawn 1 fruit every how many cells?
+SPAWN_PERIOD = 3 # spawn a fruit every how many seconds?
 FRUIT_SPEED = 2 # in cells per second
 RNGSEED = 2
 MAPNAME = 'medium.txt'

@@ -52,7 +52,9 @@ class AccelerateFruitsEvent:
 class DecelerateFruitsEvent:
     #accelerate the speed of the fruits
     pass
-
+class FruitSpeedEvent:
+    def __init__(self, speed):
+        self.speed = speed # in cell/sec
 
 # components subscribed to TickEvent as "input" will be notified first,
 # then components with priority as "model", and finally the rest (views). 

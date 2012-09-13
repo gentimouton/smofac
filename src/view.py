@@ -1,10 +1,10 @@
 from constants import RESOLUTION, BG_COLOR, FONT_SIZE
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
-    GameBuiltEvent, TickEvent, FruitKilledEvent, FruitSpawnedEvent
+    GameBuiltEvent, TickEvent, FruitKilledEvent, FruitSpawnedEvent, FruitSpeedEvent
 from fruitspr import FruitSpr
-from pygame.sprite import LayeredDirty
-from pygame.surface import Surface 
 from pygame.rect import Rect
+from pygame.sprite import LayeredDirty
+from pygame.surface import Surface
 from widgets import TextLabelWidget, RecipesWidget, CPUDisplayWidget
 import logging
 import pygame
@@ -40,6 +40,7 @@ class PygameDisplay:
         em.subscribe(GameBuiltEvent, self.on_game_built)
         em.subscribe(FruitKilledEvent, self.on_fruit_killed)
         em.subscribe(FruitSpawnedEvent, self.on_fruit_spawned)
+        em.subscribe(FruitSpeedEvent, self.on_speed_change)
         
         
     def _build_gui(self):
@@ -153,6 +154,12 @@ class PygameDisplay:
         pygame.display.flip()
 
 
+    def on_speed_change(self, ev):
+        """ Triggered when the fruit speed is changed. 
+        Slow down the interpolation of the fruits position.
+        """
+        speed = ev.speed
+        
 
 def main():
     return # TODO: display the GUI. Close when user presses ESC.

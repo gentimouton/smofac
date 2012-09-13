@@ -1,4 +1,4 @@
-from constants import SPAWNFREQ, RNGSEED, FRUIT_LIST
+from constants import SPAWN_PERIOD, RNGSEED, FRUIT_LIST
 from events import FruitSpawnedEvent
 from fruit import Fruit
 import logging
@@ -30,10 +30,9 @@ class Spawner():
                 fruit_type = FRUIT_LIST[random_int]
                 fruit = Fruit(self.cell, fruit_type, self.fruits_spawned)
                 self.cell.fruit = fruit
-                self.spawn_timer = SPAWNFREQ
+                self.spawn_timer = SPAWN_PERIOD
                 self.fruits_spawned += 1
-#                logging.debug('spawned fruit#%d - %s, now have fruits %s' 
-#                             % (fruit_id, fruit_type, ','.join([str(k) for k in self.fruits.keys()])))
+                logging.debug('spawned Fruit %s' % fruit)
                 ev = FruitSpawnedEvent(fruit)
                 self._em.publish(ev)
                 return True, fruit # no game over

@@ -1,7 +1,8 @@
 from cell import Cell
 from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT, FRUIT_SPEED
 from events import BoardBuiltEvent, TickEvent, BoardUpdatedEvent, \
-    PRIO_TICK_MODEL, FruitKilledEvent, AccelerateFruitsEvent, DecelerateFruitsEvent
+    PRIO_TICK_MODEL, FruitKilledEvent, AccelerateFruitsEvent, DecelerateFruitsEvent, \
+    FruitSpeedEvent
 from input import TriggerTrapEvent
 from spawner import Spawner
 import logging
@@ -123,7 +124,7 @@ class Board():
         
         # check there's at least one of each cell
         if not entr_cell or not junc_cell or not wait_cell\
-            or not exit_cell or not kill_cell or not trap_cell:
+            or not kill_cell or not trap_cell:
             logging.critical('Board %s is missing waypoints' % filename)
 
         return (height, width, cellgrid,
@@ -297,7 +298,7 @@ class Board():
                 # exit some fruits
                 cell = wcell
                 for i in range(num_fruits_to_kill):
-                    wzone_fruits[i].leave() # TODO: should be 'looping'/'moving' instead?
+                    wzone_fruits[i].leave()
                     cell.exit_fruit()
                     cell = cell.prevcell
                     
@@ -323,11 +324,13 @@ class Board():
           
         # entrance cells
         cell = self.J
-        while cell != None: # None = E.prevcell
-            if cell.fruit:
-                if cell.nextcell.fruit:
-                    pass # TODO: "standing" sprite instead of "walking" 
-                else: # no fruit ahead: can move
+        while cell != self.E.prevcell: # E.prevcell is None
+            fruit = cell.fruit
+            if fruit:
+                if cell.nextcell.fruit: # fruit ahead: wait
+                    fruit.wait()
+                else:# no fruit ahead: can move
+                    fruit.loop()
                     cell.progress_fruit()
             cell = cell.prevcell
 
@@ -363,8 +366,11 @@ class Board():
     def on_faster_fruits(self, ev):
         """ Increase the speed of the fruits """
         self.fruit_speed += .2 # by 0.2 cell per sec
+        ev = FruitSpeedEvent(self.fruit_speed)
+        self._em.publish(ev)
 
     def on_slower_fruits(self, ev):
         """ Decrease the speed of fruits """
         self.fruit_speed -= .2
-        
+        ev = FruitSpeedEvent(self.fruit_speed)
+        self._em.publish(ev)
