@@ -2,7 +2,7 @@
 # TODO: make a config file
 
 # mechanics config
-SPAWNFREQ = 2 # spawn 1 fruit every how many cells?
+SPAWNFREQ = 3 # spawn 1 fruit every how many cells?
 FRUIT_SPEED = 2 # in cells per second
 RNGSEED = 2
 MAPNAME = 'medium.txt'
@@ -55,7 +55,7 @@ FRUIT_COLORS = {'S': (222, 55, 55),
                'B': (55, 55, 222),
                'J': (222, 222, 22)
                }
-FPS = 4
+FPS = 60
 BG_COLOR = (111, 111, 111)
 TRAP_COLOR = (11, 11, 11)
 PATH_COLOR = (233, 233, 233)

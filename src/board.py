@@ -224,7 +224,6 @@ class Board():
             self._em.publish(ev)
             logging.debug('removed fruit: %s' % (kfruit))
             
-            
         # exit cells
         cell = kcell.prevcell
         while cell != None: # stops at X.prevcell, which is None
@@ -305,11 +304,8 @@ class Board():
                 self.fruits.add(fruit)
             else:
                 logging.info('game over') # TODO: QuitEvent
-        
-        #for fruit in self.fruits:
-        #    fruit.update() # graphics
-        
-        ev = BoardUpdatedEvent(self.fruits)
+                
+        ev = BoardUpdatedEvent()
         self._em.publish(ev)
 
 

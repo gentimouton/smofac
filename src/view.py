@@ -1,6 +1,7 @@
 from constants import RESOLUTION, BG_COLOR, CELLSIZE, FONT_SIZE
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
-    GameBuiltEvent, TickEvent, FruitKilledEvent
+    GameBuiltEvent, TickEvent, FruitKilledEvent, FruitSpawnedEvent
+from fruitspr import FruitSpr
 from pygame.sprite import LayeredDirty
 from widgets import TextLabelWidget, RecipesWidget, CPUDisplayWidget
 import logging
@@ -28,14 +29,15 @@ class PygameDisplay:
         self.window.blit(bg, (0, 0))
         
         # build GUI
+        self.fruit_to_spr = {} # map a fruit to its sprite
         self.fruit_sprites = LayeredDirty() # only reblit when dirty=1
         self.gui = self._build_gui() # return a sprite group
 
         em.subscribe(TickEvent, self.on_tick)
         em.subscribe(BoardBuiltEvent, self.on_board_built)
         em.subscribe(GameBuiltEvent, self.on_game_built)
-        em.subscribe(FruitKilledEvent, self.on_fruit_kill)
-        
+        em.subscribe(FruitKilledEvent, self.on_fruit_killed)
+        em.subscribe(FruitSpawnedEvent, self.on_fruit_spawned)
         
         
     def _build_gui(self):
@@ -104,21 +106,28 @@ class PygameDisplay:
         self.window_bg.blit(bg, (0, 0))
         
         self._em.subscribe(BoardUpdatedEvent, self.on_board_update)
-
         
         
     def on_board_update(self, ev):
         """ Store the new fruits' positions. 
         The actual display happens at clock tick. 
         """
-        for fruit in ev.fruits:
-            self.fruit_sprites.add(fruit)
-    
-    def on_fruit_kill(self, ev):
+        for fruit_spr in self.fruit_sprites:
+            fruit_spr.resync()
+
+    def on_fruit_spawned(self, ev):
+        """ When a fruit appears, add it to the sprite group """
+        fruit = ev.fruit
+        fruit_spr = FruitSpr(fruit)
+        self.fruit_to_spr[fruit] = fruit_spr
+        self.fruit_sprites.add(fruit_spr)
+        
+    def on_fruit_killed(self, ev):
         """ When a fruit is killed, remove the spr """
         fruit = ev.fruit
-        fruit.kill()
-        del fruit # needed?
+        fruit_spr = self.fruit_to_spr[fruit]
+        fruit_spr.kill() # remove fruit_spr from self.fruit_sprites
+        del self.fruit_to_spr[fruit]
         
                 
     def on_tick(self, ev):
@@ -126,14 +135,16 @@ class PygameDisplay:
             
         gui = self.gui
         fruits = self.fruit_sprites
+        screen = self.window
+        bg = self.window_bg
         # clear the window from all the sprites, replacing them with the bg
-        gui.clear(self.window, self.window_bg) 
-        fruits.clear(self.window, self.window_bg)
+        gui.clear(screen, bg) 
+        fruits.clear(screen, bg)
         gui.update() # call update() on each sprite of the group
         fruits.update(ev.loopduration)
         #collect the display areas that need to be redrawn
-        dirty_gui = gui.draw(self.window)  
-        dirty_fruits = fruits.draw(self.window)
+        dirty_gui = gui.draw(screen)  
+        dirty_fruits = fruits.draw(screen)
         dirty_rects = dirty_gui + dirty_fruits
         pygame.display.update(dirty_rects) # redisplay those areas only
         

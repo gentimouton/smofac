@@ -17,9 +17,8 @@ class GameBuiltEvent():
         self.recipes = recipes
         
 class BoardUpdatedEvent:
-    def __init__(self, fruits):
-        self.fruits = fruits
-    
+    pass
+
 class FruitSpawnedEvent():
     def __init__(self, fruit):
         self.fruit = fruit

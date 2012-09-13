@@ -8,7 +8,7 @@ class Spawner():
     def __init__(self, em, cell):
         self.rng = random.Random()
         self.rng.seed(RNGSEED) # determinism = easier to debug
-        self.spawn_timer = SPAWNFREQ # spawn fruits every X frames 
+        self.spawn_timer = 0 # start spawning right away 
         self.fruits_spawned = 0 # ++ when a fruit appears
         self.cell = cell 
         self._em = em

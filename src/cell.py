@@ -1,34 +1,40 @@
 from constants import DIR_MAP, CELLSIZE, TRAP_COLOR, PATH_COLOR, BG_COLOR
 import logging
-import pygame
+from pygame.sprite import Sprite
+from pygame.rect import Rect
+from pygame.surface import Surface
 
-class Cell(pygame.sprite.Sprite):
+class Cell(Sprite):
+    """ TODO: split into gfx and model parts. """
     
     def __init__(self, board, coords, pathdir, isentr=False, isjunc=False,
                  iswait=False, isexit=False, iskill=False, istrap=False):
         """ coords are my coordinates.
         pathdir is the direction of the next cell in the path (e.g. DIR_UP).  
         """
-        self.left, self.top = self.coords = coords
+        self.coords = left, top = coords
         self.board = board
         self.pathdir = pathdir # non-null for traps
         self.nextcell = None # will remain None for the exit
         self.prevcell = None # will remain None for the entrance
         self.fruit = None # will be set by the board or cells
-        self.iswalkable = pathdir in DIR_MAP
+        self.iswalkable = pathdir in DIR_MAP # traps are walkable
         self.istrap = istrap
         
-        cspr_left = self.left * CELLSIZE
-        cspr_top = self.top * CELLSIZE
-        self.rect = pygame.Rect(cspr_left, cspr_top, CELLSIZE, CELLSIZE)
-        self.image = pygame.Surface((CELLSIZE, CELLSIZE))
+        #gfx
+        cspr_left = left * CELLSIZE
+        cspr_top = top * CELLSIZE
+        self.rect = Rect(cspr_left, cspr_top, CELLSIZE, CELLSIZE)
+        img = Surface((CELLSIZE, CELLSIZE))
         
         if istrap:
-            self.image.fill(TRAP_COLOR)
-        elif self.iswalkable:
-            self.image.fill(PATH_COLOR)
+            img.fill(TRAP_COLOR)
+        elif self.iswalkable: # but not a trap
+            img.fill(PATH_COLOR)
         else:
-            self.image.fill(BG_COLOR)
+            img.fill(BG_COLOR)
+            
+        self.image = img
 
 
     def __str__(self):
@@ -39,11 +45,13 @@ class Cell(pygame.sprite.Sprite):
         else:
             fruitdata = 'NOFRUIT'
         return 'Cell: %s' % (str(self.coords)) + fruitdata
+    
             
     @property
     def direction(self):
         """ Return the direction where the next cell is. """
         return self.pathdir
+    
     
     #################### fruit stuff
       
@@ -53,22 +61,19 @@ class Cell(pygame.sprite.Sprite):
         
         
     def set_fruit(self, fruit, origin):
-        """ Add a fruit to my cell. origin = cell of origin. 
-        TODO: interpolate pos of fruit spr between self and origin.
-        """
+        """ Add a fruit to my cell. origin = cell of origin. """
         if self.fruit:
             logging.error('Trying to add fruit %s to cell %s,'\
                           + ' but it already has fruit %s'
                           % (fruit, self, self.fruit))
         # replace in any case
         self.fruit = fruit
-        fruit.move_to(self) # TODO: tricky for smooth fruit mvt
+        fruit.move_to(self)
 
     
     def progress_fruit(self, cell=None):
         """ Move my fruit to the next cell. 
         If a cell is specified, move it to that cell instead. 
-        TODO: interpolate pos of fruit spr between target_cell and self.
         """
         myfruit = self.fruit
         if myfruit:
@@ -99,13 +104,13 @@ class Cell(pygame.sprite.Sprite):
         if myfruit:# TODO: tricky for smooth mvt
             if tfruit: # swap 
                 tcell.fruit = myfruit
-                myfruit.release(tcell)
+                myfruit.release_to(tcell, swap=tfruit)
                 self.fruit = tfruit
-                tfruit.grab(self)
+                tfruit.grab_to(self)
                 caught = True
             else: # release
                 tcell.fruit = myfruit
-                myfruit.release(tcell)
+                myfruit.release_to(tcell)
                 self.fruit = None
                 caught = False
                 
@@ -113,7 +118,7 @@ class Cell(pygame.sprite.Sprite):
             if tfruit: # catch
                 self.fruit = tfruit
                 tcell.fruit = None
-                tfruit.grab(self)
+                tfruit.grab_to(self)
                 caught = True
             else:
                 caught = False
