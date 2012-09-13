@@ -12,22 +12,23 @@ import os
 class Board():
     
     def __init__(self, game, em, mapname, waitzone_length):
-        """ Build the board. 
-        TODO: cells in the waitzone should have a different color?
-        """
+        """ Build the board. """
         
         self.mapname = mapname
         self.game = game
         
+        # build the map
         loaded_map = self._load_mapfile(mapname)
         self.height, self.width, self._cellgrid = loaded_map[0:3]
-        waypoints = loaded_map[3:]
-        self.E, self.J, self.W, self.X, self.K, self.T = waypoints
-        if None in waypoints:
-            logging.critical('A waypoint cell is missing.')
-        
-        self._build_path()
+        self.E, self.J, self.W, self.K, self.T = loaded_map[3:8] 
+        load_cells_count = loaded_map[8] # number of cells in loading zone
+        if load_cells_count < waitzone_length:
+            logging.warn('Longest recipe has %d fruits,' % waitzone_length
+                         + ' but the map has only %d loading cells' 
+                         % load_cells_count)
         self.waitzone_length = waitzone_length
+        
+        self._build_path(waitzone_length)
         
         self.fruits = set()
         self.fruit_speed = FRUIT_SPEED # in cells per second
@@ -59,9 +60,9 @@ class Board():
         """ Return the height, width, and lines from the map file. 
         Also do some sanity checking on the way.
         This method is the only one concerned with the map file format.
-        Each cell is stored as XY in the map file, 
-        with X being the type of cell (- for walkable, E for entrance),
-        and Y being the direction to go next in the path (U,D,L,R).
+        Each cell is stored as YZ in the map file, 
+        with Y being the type of cell (- for walkable, E for entrance),
+        and Z being the direction to go next in the path (U,D,L,R).
         """
         
         # open file
@@ -86,7 +87,8 @@ class Board():
         # build the cell matrix
         cellgrid = []
         entr_cell = junc_cell = wait_cell = None
-        exit_cell = kill_cell = trap_cell = None  
+        exit_cell = kill_cell = trap_cell = None
+        load_cells_count = 0 # track how many loading cells are present
         for i in range(height):
             tmprow = []
             line = lines[i].strip().split(',')
@@ -102,9 +104,6 @@ class Board():
                 elif waypoint == 'W':
                     cell = Cell(self, coords, path_direction, iswait=True)
                     wait_cell = cell
-                elif waypoint == 'X':
-                    cell = Cell(self, coords, path_direction, isexit=True)
-                    exit_cell = cell
                 elif waypoint == 'K':
                     cell = Cell(self, coords, path_direction, iskill=True)
                     kill_cell = cell
@@ -113,7 +112,11 @@ class Board():
                     trap_cell = cell
                 else:
                     cell = Cell(self, coords, path_direction)
-                                        
+                # check if loading cell
+                if len(line[j]) > 2:
+                    load_dir = line[j][2] # direction to move fruits to when recipe match
+                    load_cells_count += 1
+                    cell.load_dir = load_dir
                 tmprow.append(cell)
 
             cellgrid.append(tmprow)
@@ -124,13 +127,16 @@ class Board():
             logging.critical('Board %s is missing waypoints' % filename)
 
         return (height, width, cellgrid,
-                entr_cell, junc_cell, wait_cell,
-                exit_cell, kill_cell, trap_cell)
+                entr_cell, junc_cell, wait_cell, kill_cell, trap_cell,
+                load_cells_count)
         
 
     
-    def _build_path(self):
-        """ build the path: link cells to each other """
+    def _build_path(self, waitzone_length):
+        """ Build the path: link cells to each other.
+        Shorten the exit path if it is longer in the map file 
+        than the longest recipe for this level. 
+        """
         
         # entrance and loop areas
         cell = self.E 
@@ -143,9 +149,37 @@ class Board():
             # and keep going
             cell = nextcell
 
-        # exit area
-        cell = self.X
-        while cell != self.K: 
+        # wire loading cells to exit cells
+        cell = self.W
+        load_dir = cell.load_dir
+        i = waitzone_length
+        while i > 0 and load_dir: # stops when a cell has no 2nd path direction
+            cell.set_waitingpath()
+            loadcoords = self._get_coords_from_dir(cell.coords, load_dir)
+            loadcell = self.get_cell(loadcoords) 
+            cell.loadcell = loadcell # wire
+            cell = cell.prevcell
+            load_dir = cell.load_dir
+            i -= 1
+        first_cell_exit_path = cell.nextcell.loadcell
+        if i > 0:
+            logging.critical('Longest recipe has %d fruits, ' % (waitzone_length)
+                          + 'but exit path has fewer exit cells')
+            exit()
+        elif load_dir: # when exit path is longer than the longest recipe,
+            # shorten the exit path 
+            while load_dir:
+                loadcoords = self._get_coords_from_dir(cell.coords, load_dir)
+                loadcell = self.get_cell(loadcoords) 
+                loadcell.set_nonwalkable()
+                cell = cell.prevcell
+                load_dir = cell.load_dir
+            
+         
+        # build the path in the exit cells
+        cell = first_cell_exit_path
+        while cell != self.K:
+            cell.set_exitpath()
             nextcoords = self._get_coords_from_dir(cell.coords, cell.pathdir)
             nextcell = self.get_cell(nextcoords)
             # wire
@@ -153,7 +187,8 @@ class Board():
             nextcell.prevcell = cell
             # and keep going
             cell = nextcell
-
+        self.K.set_exitpath() # K is also part of the exit path
+        
         # wire the trap
         trap = self.T
         target_coords = self._get_coords_from_dir(trap.coords, trap.pathdir)
@@ -233,48 +268,47 @@ class Board():
         # waiting cell
         wcell = self.W
         wfruit = wcell.fruit
-        xcell = self.X
         # Stashing a fruit allows a full loop area to still be able to move.
         stashed_fruit = None
         if wfruit:
-            if wfruit.is_leaving: # part of a leaving recipe: kick it out!
-                wcell.progress_fruit(xcell)
-            else: # wfruit is not leaving
-                # get all the fruits in the waiting cells
-                wzone_fruits = self._get_waitingzone_fruits()
-                # ask the game if there's any recipe matching
-                num_fruits_to_kill = self.game.recipe_match(wzone_fruits)
+            # get all the fruits in the waiting cells
+            wzone_fruits = self._get_waitingzone_fruits()
+            # ask the game if there's any recipe matching
+            num_fruits_to_kill = self.game.recipe_match(wzone_fruits)
+            
+            if num_fruits_to_kill == -1:# beginning of a match 
+                # all fruits until the hole must wait
+                for fruit in wzone_fruits:
+                    if fruit:
+                        fruit.wait()
+                    else:    
+                        break # fruits after the hole remain looping                            
                 
-                if num_fruits_to_kill == -1:# beginning of a match 
-                    # all fruits until the hole must wait
-                    for fruit in wzone_fruits:
-                        if fruit:
-                            fruit.wait()
-                        else:    
-                            break # fruits after the hole remain looping                            
+            elif num_fruits_to_kill == 0: # no recipe match: keep moving!
+                wcell.empty()
+                stashed_fruit = wfruit # stash wfruit to allow for loop movement
+                for fruit in wzone_fruits:
+                    if fruit:
+                        fruit.loop()
+                    else:
+                        break # fruits after the hole are looping already
+                
+            elif num_fruits_to_kill > 0: # recipe match!
+                # exit some fruits
+                cell = wcell
+                for i in range(num_fruits_to_kill):
+                    wzone_fruits[i].leave() # TODO: should be 'looping'/'moving' instead?
+                    cell.exit_fruit()
+                    cell = cell.prevcell
                     
-                elif num_fruits_to_kill == 0: # no recipe match: keep moving!
-                    wcell.empty()
-                    stashed_fruit = wfruit # stash wfruit to allow for loop movement
-                    for fruit in wzone_fruits:
-                        if fruit:
-                            fruit.loop()
-                        else:
-                            break # fruits after the hole are looping already
-                    
-                elif num_fruits_to_kill > 0: # recipe match!
-                    # exit some fruits
-                    for i in range(num_fruits_to_kill): 
-                        wzone_fruits[i].leave()
-                    # the other fruits keep looping
-                    for i in range(num_fruits_to_kill, self.waitzone_length): 
-                        fruit = wzone_fruits[i] # None if hole
-                        if fruit:
-                            fruit.loop()
-                        else:
-                            break # fruits after the hole are looping already
-                    wcell.progress_fruit(xcell)# wfruit takes the exit path
-                    
+                # the other fruits keep looping
+                for i in range(num_fruits_to_kill, self.waitzone_length): 
+                    fruit = wzone_fruits[i] # None if hole
+                    if fruit:
+                        fruit.loop()
+                    else:
+                        break # fruits after the hole are looping already
+               
         # looping cells
         cell = wcell.prevcell
         while cell != wcell:
@@ -286,7 +320,7 @@ class Board():
         # now we can put the stashed fruit (if any) back in the loop
         if stashed_fruit:
             wcell.nextcell.set_fruit(stashed_fruit, wcell)
-            
+          
         # entrance cells
         cell = self.J
         while cell != None: # None = E.prevcell

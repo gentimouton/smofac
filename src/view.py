@@ -1,8 +1,10 @@
-from constants import RESOLUTION, BG_COLOR, CELLSIZE, FONT_SIZE
+from constants import RESOLUTION, BG_COLOR, FONT_SIZE
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
     GameBuiltEvent, TickEvent, FruitKilledEvent, FruitSpawnedEvent
 from fruitspr import FruitSpr
 from pygame.sprite import LayeredDirty
+from pygame.surface import Surface 
+from pygame.rect import Rect
 from widgets import TextLabelWidget, RecipesWidget, CPUDisplayWidget
 import logging
 import pygame
@@ -22,7 +24,7 @@ class PygameDisplay:
         pygame.display.set_caption('Smoothie Factory')
         
         # blit the bg screen: all black
-        bg = pygame.Surface(window.get_size()) 
+        bg = Surface(window.get_size()) 
         bg.fill((0, 0, 0))
         bg = bg.convert()
         self.window_bg = bg 
@@ -46,8 +48,8 @@ class PygameDisplay:
         gui = LayeredDirty() # only reblit when dirty=1
         
         # score at top-right of the window
-        rec = pygame.Rect(600 + 10, 0,
-                          100, FONT_SIZE * 1.5)
+        rec = Rect(600 + 10, 0,
+                   100, FONT_SIZE * 1.5)
         evt_txt_dict = {RecipeMatchEvent: 'current_score'}
         score_widget = TextLabelWidget(self._em, '0',
                                        events_attrs=evt_txt_dict,
@@ -57,8 +59,8 @@ class PygameDisplay:
         gui.add(score_widget)
         
         # CPU at bottom-right of the window
-        rec = pygame.Rect(600 + 10, 600 - FONT_SIZE * 1.5,
-                          100, FONT_SIZE * 1.5)
+        rec = Rect(600 + 10, 600 - FONT_SIZE * 1.5,
+                   100, FONT_SIZE * 1.5)
         cpu_widget = CPUDisplayWidget(self._em, '0',
                                       rect=rec,
                                       txtcolor=(0, 0, 0),
@@ -75,7 +77,7 @@ class PygameDisplay:
         """ build the recipe GUI """
         
         evt_recipe_dict = {RecipeMatchEvent: 'recipe'}
-        rec = pygame.Rect(600, FONT_SIZE * 1.5, 150, 400)
+        rec = Rect(600, FONT_SIZE * 1.5, 150, 400)
         # ev.recipes maps tuples of fruit type to score
         recipe_widget = RecipesWidget(self._em,
                                       ev.recipes,
@@ -91,10 +93,9 @@ class PygameDisplay:
         
         width, height = ev.width, ev.height
         board = ev.board # to obtain cells from coords
-        #(width * CELLSIZE, height * CELLSIZE)
         
         win_height = self.window.get_height()
-        bg = pygame.Surface((win_height, win_height))
+        bg = Surface((win_height, win_height))
         bg = bg.convert()
         bg.fill(BG_COLOR)
         

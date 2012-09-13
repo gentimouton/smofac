@@ -1,14 +1,15 @@
-from constants import DIR_MAP, CELLSIZE, TRAP_COLOR, PATH_COLOR, BG_COLOR
-import logging
-from pygame.sprite import Sprite
+from constants import DIR_MAP, CELLSIZE, TRAP_COLOR, PATH_COLOR, BG_COLOR, \
+    BLENDER_COLOR
 from pygame.rect import Rect
+from pygame.sprite import Sprite
 from pygame.surface import Surface
+import logging
 
 class Cell(Sprite):
     """ TODO: split into gfx and model parts. """
     
     def __init__(self, board, coords, pathdir, isentr=False, isjunc=False,
-                 iswait=False, isexit=False, iskill=False, istrap=False):
+                 iswait=False, iskill=False, istrap=False):
         """ coords are my coordinates.
         pathdir is the direction of the next cell in the path (e.g. DIR_UP).  
         """
@@ -17,9 +18,11 @@ class Cell(Sprite):
         self.pathdir = pathdir # non-null for traps
         self.nextcell = None # will remain None for the exit
         self.prevcell = None # will remain None for the entrance
+        self.loadcell = None # will remain None for non-loading cells
         self.fruit = None # will be set by the board or cells
         self.iswalkable = pathdir in DIR_MAP # traps are walkable
         self.istrap = istrap
+        self.load_dir = None
         
         #gfx
         cspr_left = left * CELLSIZE
@@ -52,7 +55,23 @@ class Cell(Sprite):
         """ Return the direction where the next cell is. """
         return self.pathdir
     
+    def set_exitpath(self):
+        """ The board found out that I am on the exit path. 
+        Change my color. """
+        self.image.fill(BLENDER_COLOR) 
+        
+    def set_waitingpath(self):
+        """ The board found out I'm a cell in the waiting area. 
+        Change my color. """
+        self.image.fill(BLENDER_COLOR)
     
+    def set_nonwalkable(self):
+        """ The board found out there are more cells in the exit path
+        than the longest recipe: some cells (like me) need to be removed """
+        self.iswalkable = False
+        self.image.fill(BG_COLOR)      
+        
+        
     #################### fruit stuff
       
     def empty(self):
@@ -82,6 +101,14 @@ class Cell(Sprite):
             myfruit.move_to(target_cell)
             self.fruit = None
     
+    def exit_fruit(self):
+        """ Move a fruit to my exit cell. """
+        myfruit = self.fruit
+        if myfruit:
+            loadcell = self.loadcell
+            loadcell.fruit = myfruit
+            myfruit.move_to(loadcell)
+            self.fruit = None
     
     ################# trap stuff
     
