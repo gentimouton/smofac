@@ -16,18 +16,16 @@ class Spawner():
         
         
     def on_tick(self, ev):
-        """ Spawn a fruit if it's time to do it. 
-        Return (a, b), where a is whether it had to spawn,
-        and b the fruit (if succeeded).
-        This is called by the board every model tick.
-        """
+        """ Spawn a fruit if it's time to do it. """
         
         duration = ev.loopduration
         self.spawn_timer -= duration
         if self.spawn_timer <= 0:
+            
             if self.cell.fruit: # should spawn new fruit, but can't: game over!
                 logging.info('game over') # TODO: QuitEvent
-            else: # can spawn: game keeps going
+                
+            else: # can spawn: the game keeps going
                 random_int = self.rng.randint(0, len(FRUIT_LIST) - 1)
                 fruit_type = FRUIT_LIST[random_int]
                 fruit = Fruit(self.cell, fruit_type, self.fruits_spawned)

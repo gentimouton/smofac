@@ -75,18 +75,24 @@ class PygameDisplay:
     
     
     def on_game_built(self, ev):
-        """ build the recipe GUI """
+        """ Build the recipe GUI, and set the spr movement timer. """
         
+        # recipe widget
         evt_recipe_dict = {RecipeMatchEvent: 'recipe'}
         rec = Rect(600, FONT_SIZE * 1.5, 150, 400)
         # ev.recipes maps tuples of fruit type to score
-        recipe_widget = RecipesWidget(self._em,
-                                      ev.recipes,
-                                      evt_recipe_dict,
-                                      rect=rec,
-                                      txtcolor=(222, 222, 222),
-                                      bgcolor=(0, 0, 0))
-        self.gui.add(recipe_widget)
+        rwid = RecipesWidget(self._em,
+                             ev.recipes,
+                             evt_recipe_dict,
+                             rect=rec,
+                             txtcolor=(222, 222, 222),
+                             bgcolor=(0, 0, 0))
+        self.gui.add(rwid)
+        
+        # spr movement timer
+        model_mvt_timer = 1000 / ev.fruit_speed
+        self.spr_timer = model_mvt_timer / 2 # spr takes 2 pos per model tick
+        
         
         
     def on_board_built(self, ev):

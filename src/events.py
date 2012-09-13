@@ -13,8 +13,9 @@ class BoardBuiltEvent(Event):
         self.board = board
 
 class GameBuiltEvent():
-    def __init__(self, recipes):
+    def __init__(self, recipes, fruit_speed):
         self.recipes = recipes
+        self.fruit_speed = fruit_speed
         
 class BoardUpdatedEvent:
     pass

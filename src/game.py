@@ -3,8 +3,9 @@ Model: map name, board, scores, and recipes.
 View: score and recipe widgets on the right, board on the left.
 """
 from board import Board
-from constants import MAPNAME, RECIPES, RECIPES_MADE_WIN_CONDITION
-from events import RecipeMatchEvent, GameBuiltEvent, QuitEvent
+from constants import MAPNAME, RECIPES, RECIPES_MADE_WIN_CONDITION, FRUIT_SPEED
+from events import RecipeMatchEvent, GameBuiltEvent, QuitEvent, TickEvent, \
+    FruitSpeedEvent, PRIO_TICK_MODEL, AccelerateFruitsEvent, DecelerateFruitsEvent
 import logging
 
 
@@ -39,9 +40,16 @@ class Game:
         # create the board
         self.board = Board(self, em, self.mapname, max_recipe_length)
         
+        self.fruit_speed = FRUIT_SPEED # in cells per second
+        self.fruit_mvt_timer = 1000. / self.fruit_speed # decreased each clock tick 
+        
         self._em = em
+        em.subscribe(TickEvent, self.on_tick, PRIO_TICK_MODEL)
+        em.subscribe(AccelerateFruitsEvent, self.on_faster_fruits)
+        em.subscribe(DecelerateFruitsEvent, self.on_slower_fruits)
+
         # RECIPES = dict: tuples of fruit type -> score
-        em.publish(GameBuiltEvent(RECIPES))
+        em.publish(GameBuiltEvent(RECIPES, self.fruit_speed))
         
         
     def recipe_match(self, fruit_list):
@@ -118,3 +126,27 @@ class Game:
             return False # process that mess if possible...
                     
         return len(bucket) > 1 # 1 because 'score' is one of the leaves
+
+
+        
+    def on_tick(self, tickevt):
+        """ If it's time, ask the board to move the fruits. """
+        
+        elapsed_millis = tickevt.loopduration
+        self.fruit_mvt_timer -= elapsed_millis
+        if self.fruit_mvt_timer <= 0:
+            self.board.progress_fruits()
+            self.fruit_mvt_timer = 1000. / self.fruit_speed
+
+            
+    def on_faster_fruits(self, ev):
+        """ Increase the speed of the fruits """
+        self.fruit_speed += .2 # by 0.2 cell per sec
+        ev = FruitSpeedEvent(self.fruit_speed)
+        self._em.publish(ev)
+
+    def on_slower_fruits(self, ev):
+        """ Decrease the speed of fruits """
+        self.fruit_speed -= .2
+        ev = FruitSpeedEvent(self.fruit_speed)
+        self._em.publish(ev)

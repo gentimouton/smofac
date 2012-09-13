@@ -48,7 +48,7 @@ class FruitSpr(DirtySprite):
         
     
     def __repr__(self):
-        return '%d at %s' % (self.fruit.fruit_num, str(self.rect))
+        return '%d at %s' % (self.fruit, str(self.rect))
     def __str__(self):
         return self.__repr__()
         
