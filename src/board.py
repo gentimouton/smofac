@@ -334,14 +334,6 @@ class Board():
                     fruit.loop()
                     cell.progress_fruit()
             cell = cell.prevcell
-
-        # tick the fruit spawner; must happen after all moves have been resolved        
-#        spawned, fruit = self.spawner.tick()
-#        if spawned:
-#            if fruit:
-#                self.fruits.add(fruit)
-#            else:
-#                logging.info('game over') # TODO: QuitEvent
                 
         ev = BoardUpdatedEvent()
         self._em.publish(ev)
