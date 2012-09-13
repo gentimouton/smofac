@@ -2,8 +2,10 @@
 # TODO: make a config file
 
 # mechanics config
-SPAWN_PERIOD = 3 # spawn a fruit every how many seconds?
+SPAWN_PERIOD = 1 # spawn a fruit every how many seconds?
 FRUIT_SPEED = 2 # in cells per second
+# thus there is a fruit spawned every SPAWN_PERIOD * FRUIT_SPEED cells
+
 RNGSEED = 2
 MAPNAME = 'medium.txt'
 RECIPES_MADE_WIN_CONDITION = 8 # how many recipes to make to win 

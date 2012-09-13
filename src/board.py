@@ -2,7 +2,7 @@ from cell import Cell
 from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT, FRUIT_SPEED
 from events import BoardBuiltEvent, TickEvent, BoardUpdatedEvent, \
     PRIO_TICK_MODEL, FruitKilledEvent, AccelerateFruitsEvent, DecelerateFruitsEvent, \
-    FruitSpeedEvent
+    FruitSpeedEvent, FruitSpawnedEvent
 from input import TriggerTrapEvent
 from spawner import Spawner
 import logging
@@ -42,6 +42,7 @@ class Board():
         em.subscribe(TickEvent, self.on_tick, PRIO_TICK_MODEL)
         em.subscribe(AccelerateFruitsEvent, self.on_faster_fruits)
         em.subscribe(DecelerateFruitsEvent, self.on_slower_fruits)
+        em.subscribe(FruitSpawnedEvent, self.on_fruit_spawned)
         
         # notify that the board is built
         ev = BoardBuiltEvent(self.width, self.height, self)
@@ -335,12 +336,12 @@ class Board():
             cell = cell.prevcell
 
         # tick the fruit spawner; must happen after all moves have been resolved        
-        spawned, fruit = self.spawner.tick()
-        if spawned:
-            if fruit:
-                self.fruits.add(fruit)
-            else:
-                logging.info('game over') # TODO: QuitEvent
+#        spawned, fruit = self.spawner.tick()
+#        if spawned:
+#            if fruit:
+#                self.fruits.add(fruit)
+#            else:
+#                logging.info('game over') # TODO: QuitEvent
                 
         ev = BoardUpdatedEvent()
         self._em.publish(ev)
@@ -357,10 +358,14 @@ class Board():
         return fruit_list
 
 
+    def on_fruit_spawned(self, ev):
+        """ When a fruit is spawned, add it to the list. """
+        self.fruits.add(ev.fruit)
+        
+        
     def on_triggertrap(self, inputevt):
         """ User pushed the trap key. Try to trap a fruit. """
         caught = self.T.trap()
-        
         
         
     def on_faster_fruits(self, ev):
