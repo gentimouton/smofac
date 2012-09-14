@@ -15,6 +15,7 @@ class Fruit():
         
         # fruit's model position. 
         self.cell = cell
+        self.prevcell = cell
 
 
     def __repr__(self):
@@ -53,4 +54,5 @@ class Fruit():
         self.loop()
         
     def move_to(self, cell):
+        self.prevcell = self.cell
         self.cell = cell

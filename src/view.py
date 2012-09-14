@@ -1,4 +1,4 @@
-from constants import RESOLUTION, BG_COLOR, FONT_SIZE
+from constants import RESOLUTION, BG_COLOR, FONT_SIZE, STEPS_PER_CELL
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
     GameBuiltEvent, TickEvent, FruitKilledEvent, FruitSpawnedEvent, FruitSpeedEvent
 from fruitspr import FruitSpr
@@ -8,6 +8,7 @@ from pygame.surface import Surface
 from widgets import TextLabelWidget, RecipesWidget, CPUDisplayWidget
 import logging
 import pygame
+import time
 
 
 
@@ -30,9 +31,12 @@ class PygameDisplay:
         self.window_bg = bg 
         self.window.blit(bg, (0, 0))
         
-        # build GUI
+        # fruit sprites 
         self.fruit_to_spr = {} # map a fruit to its sprite
         self.fruit_sprites = LayeredDirty() # only reblit when dirty=1
+        self.interp_steps = 0 # 2 interpolation steps between 2 model updates
+        
+        # build GUI
         self.gui = self._build_gui() # return a sprite group
 
         em.subscribe(TickEvent, self.on_tick)
@@ -90,9 +94,9 @@ class PygameDisplay:
         self.gui.add(rwid)
         
         # spr movement timer
-        model_mvt_timer = 1000 / ev.fruit_speed
-        self.spr_timer = model_mvt_timer / 2 # spr takes 2 pos per model tick
-        
+        model_mvt_timer = 1000 / ev.fruit_speed 
+        self.base_spr_timer = model_mvt_timer / STEPS_PER_CELL
+        self.spr_timer = self.base_spr_timer
         
         
     def on_board_built(self, ev):
@@ -116,17 +120,11 @@ class PygameDisplay:
         self._em.subscribe(BoardUpdatedEvent, self.on_board_update)
         
         
-    def on_board_update(self, ev):
-        """ Store the new fruits' positions. 
-        The actual display happens at clock tick. 
-        """
-        for fruit_spr in self.fruit_sprites:
-            fruit_spr.resync()
 
     def on_fruit_spawned(self, ev):
         """ When a fruit appears, add it to the sprite group """
         fruit = ev.fruit
-        fruit_spr = FruitSpr(fruit)
+        fruit_spr = FruitSpr(fruit, self.interp_steps)
         self.fruit_to_spr[fruit] = fruit_spr
         self.fruit_sprites.add(fruit_spr)
         
@@ -137,10 +135,34 @@ class PygameDisplay:
         fruit_spr.kill() # remove fruit_spr from self.fruit_sprites
         del self.fruit_to_spr[fruit]
         
-                
+       
+    def on_board_update(self, ev):
+        """ Store the new fruits' positions. 
+        The actual display happens at clock tick. 
+        """
+        # prepare spr interpolation timer and step counter
+        self.spr_timer = self.base_spr_timer
+        self.interp_steps = 0 # restart interpolating fruit positions
+        for fruit_spr in self.fruit_sprites:
+            fruit_spr.resync(self.interp_steps)
+        
+                 
     def on_tick(self, ev):
         """ Blit the active board elements and the GUI on the screen. """
+        
+        # spr positions
+        duration = ev.loopduration
+        self.spr_timer -= duration
+        if self.spr_timer <= 0: 
+            self.spr_timer = self.base_spr_timer
+            self.interp_steps += 1
+            # interpolate 3 positions, 
+            # but the last one is done when board is updated (so only 2)
+            if self.interp_steps < STEPS_PER_CELL:
+                for fruit in self.fruit_sprites:
+                    fruit.resync(self.interp_steps)
             
+        # display    
         gui = self.gui
         fruits = self.fruit_sprites
         screen = self.window
@@ -149,7 +171,7 @@ class PygameDisplay:
         gui.clear(screen, bg) 
         fruits.clear(screen, bg)
         gui.update() # call update() on each sprite of the group
-        fruits.update(ev.loopduration)
+        fruits.update(duration) # reset the dirty flag to 0
         #collect the display areas that need to be redrawn
         dirty_gui = gui.draw(screen)  
         dirty_fruits = fruits.draw(screen)
@@ -162,7 +184,7 @@ class PygameDisplay:
 
     def on_speed_change(self, ev):
         """ Triggered when the fruit speed is changed. 
-        Slow down the interpolation of the fruits position.
+        TODO: Slow down the interpolation of the fruits position.
         """
         speed = ev.speed
         

@@ -7,6 +7,7 @@ from input import TriggerTrapEvent
 from spawner import Spawner
 import logging
 import os
+import time
 
 
         
@@ -317,7 +318,7 @@ class Board():
                     fruit.loop()
                     cell.progress_fruit()
             cell = cell.prevcell
-                
+        
         ev = BoardUpdatedEvent()
         self._em.publish(ev)
 

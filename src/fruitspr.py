@@ -1,5 +1,5 @@
 from constants import FRUIT_COLORS, FONT_SIZE, CELLSIZE, FRUIT_SPEED, DIR_UP, \
-    DIR_DOWN, DIR_LEFT, DIR_RIGHT
+    DIR_DOWN, DIR_LEFT, DIR_RIGHT, STEPS_PER_CELL
 from pygame.font import Font
 from pygame.rect import Rect
 from pygame.sprite import DirtySprite
@@ -10,9 +10,11 @@ from pygame.transform import rotate
 class FruitSpr(DirtySprite):
     """ Representation on the screen of a fruit. """
     
-    def __init__(self, fruit):
+    def __init__(self, fruit, interp_step):
         """ Prepare the fruit's spr: a square diamond 
         with a number in the center.
+        interp_step determines where to position the sprite, 
+        based on the view's current sprite step. 
         """
         DirtySprite.__init__(self)
         self.fruit = fruit
@@ -37,13 +39,8 @@ class FruitSpr(DirtySprite):
         img.blit(txtsurf, textpos)
         
         # prepare rect to blit on screen
-        left = fruit.coords[0] * CELLSIZE
-        top = fruit.coords[1] * CELLSIZE
-        self.rect = Rect(left, top, CELLSIZE, CELLSIZE) 
+        self.resync(interp_step)
         
-        self.dirty = 1 # when 1, the view will blit it. 
-        # dirty is set to 0 by the LayeredDirty sprite group it belongs to.
- 
         self.image = img
         
     
@@ -53,58 +50,39 @@ class FruitSpr(DirtySprite):
         return self.__repr__()
         
     
-    def resync(self):
-        """ synchronize the spr coords with the model coords """
+    def resync(self, interp_step):
+        """ synchronize the spr coords with the model coords,
+        and shift the spr based on the current step of interpolation. 
+        """
         fruit = self.fruit
-        left = fruit.coords[0] * CELLSIZE
-        top = fruit.coords[1] * CELLSIZE
-        self.rect = Rect(left, top, CELLSIZE, CELLSIZE)         
+
+        # compute the speed vector
+        spd_x = spd_y = 0 # speed vector: how many px to move per step
+        if interp_step <= STEPS_PER_CELL / 2:
+            # 1st half of interpolation: join my prev cell and current cell
+            cell = fruit.prevcell
+        else:# 2nd half: join current cell and next cell
+            cell = fruit.cell
+        if cell.direction == DIR_UP: # the spr should move up
+            spd_y = -CELLSIZE / STEPS_PER_CELL
+        elif cell.direction == DIR_DOWN:
+            spd_y = CELLSIZE / STEPS_PER_CELL
+        elif cell.direction == DIR_LEFT:
+            spd_x = -CELLSIZE / STEPS_PER_CELL
+        elif cell.direction == DIR_RIGHT:
+            spd_x = CELLSIZE / STEPS_PER_CELL
+        
+        # offset the first step of the spr such that at mid-model-tick,
+        # the spr will be right in the middle of cell
+        offset_x = (int(STEPS_PER_CELL / 2) - interp_step) * spd_x
+        offset_y = (int(STEPS_PER_CELL / 2) - interp_step) * spd_y
+        left = fruit.coords[0] * CELLSIZE - offset_x 
+        top = fruit.coords[1] * CELLSIZE - offset_y 
+        
+        self.rect = Rect(left, top, CELLSIZE, CELLSIZE)
         self.dirty = 1 
-
-    
-#    def move_to(self, cell, in_trap=False):
-#        """ Move the fruit to a cell. 
-#        We need to know the next cell for appropriate positioning.
-#        """
-#
-#        if in_trap: # fruit just got grabbed
-#            self.wait()
-#            
-#            #gfx
-#            left = cell.coords[0] * CELLSIZE
-#            top = cell.coords[1] * CELLSIZE
-#            self.rect.topleft = (left + CELLSIZE / 10, top + CELLSIZE / 10)
-#            self.spr_delta = 0, 0 # dont move the spr
-#            self.spr_timer = 0 # TODO: replace by the swapped fruit's timer
-#            # TODO: what is the timer if no fruit to swap with? 
-#        
-#        else: # waiting or looping
-#            #gfx
-#            ctr_left = cell.coords[0] * CELLSIZE
-#            ctr_top = cell.coords[1] * CELLSIZE
-#            if cell.direction == DIR_UP: # the spr should move up
-#                ctr_left += CELLSIZE / 2
-#                ctr_top += CELLSIZE
-#                spr_dx, spr_dy = 0, -CELLSIZE / 2 # the sprite speed vector
-#            elif cell.direction == DIR_DOWN:
-#                ctr_left += CELLSIZE / 2
-#                spr_dx, spr_dy = 0, CELLSIZE / 2
-#            elif cell.direction == DIR_LEFT:
-#                ctr_top += CELLSIZE / 2
-#                spr_dx, spr_dy = -CELLSIZE / 2, 0
-#            elif cell.direction == DIR_RIGHT:
-#                ctr_left += CELLSIZE
-#                ctr_top += CELLSIZE / 2
-#                spr_dx, spr_dy = CELLSIZE / 2, 0
-#            # center the spr rect
-#            self.rect.center = ctr_left, ctr_top
-#            
-#            # when and how to update the sprite's position
-#            self.spr_delta = spr_dx, spr_dy
-#            self.spr_timer = 1000 * FRUIT_SPEED / 2 
-#        
-#        self.dirty = 1 
-
+        # dirty is set to 0 by the LayeredDirty sprite group it belongs to.        
+        
 
     def update(self, duration):
         """ Eventually update the fruit sprite position. 
@@ -112,15 +90,4 @@ class FruitSpr(DirtySprite):
         If dirty, LayeredDirty.draw sets it to 0.  
         """
         return # nothing to do
-        
-#        if not self.is_looping:
-#            return # only need to update the sprite of moving fruits
-#         
-#        self.spr_timer -= duration
-#        if self.spr_timer <= 0: # time to move the spr  
-#            dx, dy = self.spr_delta
-#            self.rect.move_ip(dx, dy)
-#            self.spr_timer = 1000 * FRUIT_SPEED / 2
-#            self.dirty = 1
-#            
 
