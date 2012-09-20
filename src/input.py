@@ -1,4 +1,4 @@
-from events import QuitEvent, TriggerTrapEvent, TickEvent, PRIO_TICK_INPUT, \
+from events import QuitEvent, TriggerTrapEvent, TickEvent, PRIO_TICK_CTRL, \
     AccelerateFruitsEvent, DecelerateFruitsEvent
 from pygame.locals import KEYDOWN, K_ESCAPE, QUIT, K_SPACE, K_EQUALS, K_PLUS, \
     K_MINUS, K_UNDERSCORE
@@ -12,7 +12,7 @@ class InputController:
     def __init__(self, em):
         pygame.init() # OK to init multiple times
         self._em = em
-        self._em.subscribe(TickEvent, self.on_tick, PRIO_TICK_INPUT)
+        self._em.subscribe(TickEvent, self.on_tick, PRIO_TICK_CTRL)
         
 
     def on_tick(self, tickevt):

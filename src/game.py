@@ -41,7 +41,11 @@ class Game:
         self.board = Board(self, em, self.mapname, max_recipe_length)
         
         self.fruit_speed = FRUIT_SPEED # in cells per second
-        self.fruit_mvt_timer = 1000. / self.fruit_speed # decreased each clock tick 
+        # 1 tick for anticipating and setting movement direction, 
+        # and another for actually moving fruits
+        self.base_fruit_timer = 1000. / self.fruit_speed / 2 
+        self.fruit_mvt_timer = self.base_fruit_timer # decreased each clock tick
+        self.fruit_mvt_phase = False # 0 for prediction, 1 for actual movement 
         
         self._em = em
         em.subscribe(TickEvent, self.on_tick, PRIO_TICK_MODEL)
@@ -135,9 +139,14 @@ class Game:
         elapsed_millis = tickevt.loopduration
         self.fruit_mvt_timer -= elapsed_millis
         if self.fruit_mvt_timer <= 0:
-            self.board.progress_fruits()
-            self.fruit_mvt_timer = 1000. / self.fruit_speed
-
+            if self.fruit_mvt_phase: # movement
+                self.board.progress_fruits()
+            else:
+                self.board.predict_fruits()
+            self.fruit_mvt_timer = self.base_fruit_timer
+            self.fruit_mvt_phase = not self.fruit_mvt_phase
+            
+            
             
     def on_faster_fruits(self, ev):
         """ Increase the speed of the fruits """

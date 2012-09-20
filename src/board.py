@@ -2,7 +2,7 @@ from cell import Cell
 from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT, FRUIT_SPEED
 from events import BoardBuiltEvent, TickEvent, BoardUpdatedEvent, \
     PRIO_TICK_MODEL, FruitKilledEvent, AccelerateFruitsEvent, DecelerateFruitsEvent, \
-    FruitSpeedEvent, FruitSpawnedEvent
+    FruitSpeedEvent, FruitSpawnedEvent, BoardPredictedEvent, FruitPlacedEvent
 from input import TriggerTrapEvent
 from spawner import Spawner
 import logging
@@ -18,6 +18,7 @@ class Board():
         
         self.mapname = mapname
         self.game = game
+        self.phase = 'progress'
         
         # build the map
         loaded_map = self.__load_mapfile(mapname)
@@ -33,6 +34,10 @@ class Board():
         self.__build_path(waitzone_length)
         
         self.fruits = set()
+        self.fruits_to_spawn = set()
+        self.fruits_to_kill = set()
+        self.fruits_to_move = set()
+        
         # When it reaches zero or below, move the fruits.
         self.spawner = Spawner(em, self.E)
 
@@ -228,27 +233,34 @@ class Board():
             c = left - 1, top
         elif direction == DIR_RIGHT:
             c = left + 1, top
+        else: # no direction: cell is missing
+            logging.critical('Cell %s does not seem walkable in map %s'
+                             % (str(coords), self.mapname))
+            exit()
         return c
     
             
             
     def progress_fruits(self):
-        """ Make the fruits move on the board. """
+        """ Actually move the fruits on the board. Aka movement tick.
+        The loading cells are taken care of during the prediction tick. 
+        """
         
-        # blender/kill cell
+        # kill fruits as soon as they land on the blender cell
         kcell = self.K
         kfruit = kcell.fruit
         if kfruit: # to the blender!
+            cell = kfruit.cell
             self.fruits.remove(kfruit)
-            kcell.empty()
+            cell.empty()
             ev = FruitKilledEvent(kfruit)
             self._em.publish(ev)
-            logging.debug('removed fruit: %s' % (kfruit))
-            
+            logging.debug('removed fruit: %s' % kfruit)
+        
         # exit cells
         cell = kcell.prevcell
         while cell != None: # stops at X.prevcell, which is None
-            cell.progress_fruit()
+            cell.move_fruit()
             cell = cell.prevcell
 
         # waiting cell
@@ -257,69 +269,139 @@ class Board():
         # Stashing a fruit allows a full loop area to still be able to move.
         stashed_fruit = None
         if wfruit:
-            # get all the fruits in the waiting cells
-            wzone_fruits = self.get_waitingzone_fruits()
-            # ask the game if there's any recipe matching
-            num_fruits_to_kill = self.game.recipe_match(wzone_fruits)
-            
-            if num_fruits_to_kill == -1:# beginning of a match 
-                # all fruits until the hole must wait
-                for fruit in wzone_fruits:
-                    if fruit:
-                        fruit.wait()
-                    else:    
-                        break # fruits after the hole remain looping                            
-                
-            elif num_fruits_to_kill == 0: # no recipe match: keep moving!
+            if wfruit.is_leaving: # wfruit has been predicted to leave
+                wcell.move_fruit() # wfruit.nextcell should be an exit cell
+            elif wfruit.is_looping: # prediction tick says wfruit should loop
+                stashed_fruit = wfruit
                 wcell.empty()
-                stashed_fruit = wfruit # stash wfruit to allow for loop movement
-                for fruit in wzone_fruits:
-                    if fruit:
-                        fruit.loop()
-                    else:
-                        break # fruits after the hole are looping already
-                
-            elif num_fruits_to_kill > 0: # recipe match!
-                # exit some fruits
-                cell = wcell
-                for i in range(num_fruits_to_kill):
-                    wzone_fruits[i].leave()
-                    cell.exit_fruit()
-                    cell = cell.prevcell
-                    
-                # the other fruits keep looping
-                for i in range(num_fruits_to_kill, self.waitzone_length): 
-                    fruit = wzone_fruits[i] # None if hole
-                    if fruit:
-                        fruit.loop()
-                    else:
-                        break # fruits after the hole are looping already
-               
+            
         # looping cells
         cell = wcell.prevcell
         while cell != wcell:
             fruit = cell.fruit
             if fruit and not fruit.is_waiting: # waiting fruits don't move
-                cell.progress_fruit()
+                # fruits are set to wait by the prediction tick
+                cell.move_fruit()
             cell = cell.prevcell
         
         # now we can put the stashed fruit (if any) back in the loop
         if stashed_fruit:
-            wcell.nextcell.set_fruit(stashed_fruit, wcell)
+            cell = wcell.nextcell
+            cell.set_fruit(stashed_fruit)
           
         # entrance cells
         cell = self.J
         while cell != self.E.prevcell: # E.prevcell is None
-            fruit = cell.fruit
-            if fruit:
-                if cell.nextcell.fruit: # fruit ahead: wait
-                    fruit.wait()
-                else:# no fruit ahead: can move
-                    fruit.loop()
-                    cell.progress_fruit()
+            cell.move_fruit()
             cell = cell.prevcell
         
+        self.phase = 'progress'
         ev = BoardUpdatedEvent()
+        self._em.publish(ev)
+
+        
+        
+    def predict_fruits(self):
+        """ Predict the next cell each fruit is going to be in. 
+        Aka prediction tick.
+        """
+        
+        # nothing to do for the blender cell: 
+        # the fruit has been killed at movement tick
+          
+        # exit cells
+        cell = self.K.prevcell
+        while cell != None: # stops at X.prevcell, which is None
+            cell.predict_fruit_move()
+            cell = cell.prevcell
+
+        # waiting cells
+        wcell = self.W
+        # get all the fruits in the waiting cells
+        wzone_fruits = self.get_waitingzone_fruits()
+        # ask the game if there's any recipe matching
+        num_fruits_to_kill = self.game.recipe_match(wzone_fruits)
+        # iterate over the waiting cells
+        i = self.waitzone_length
+        cell = wcell
+        # all fruits until the hole must wait; 
+        # fruits after the hole must loop
+        
+        if num_fruits_to_kill == -1:# beginning of a match 
+            seen_hole = False
+            while i > 0:
+                fruit = cell.fruit
+                if seen_hole: # fruits after the hole remain looping
+                    if fruit: # can be None if the cell has no fruit
+                        fruit.loop()
+                        cell.predict_fruit_move()
+                else:# all loading cells so far had fruits
+                    if fruit:
+                        fruit.wait()
+                    else: # first cell without fruit: hole seen!
+                        seen_hole = True
+                cell = cell.prevcell
+                i -= 1
+            
+        elif num_fruits_to_kill == 0:# no recipe match: all fruits keep looping!
+            while i > 0:
+                fruit = cell.fruit
+                if fruit: # can be None if the cell has no fruit
+                    fruit.loop()
+                    cell.predict_fruit_move()
+                cell = cell.prevcell
+                i -= 1
+            
+        elif num_fruits_to_kill > 0: # recipe match 
+            j = num_fruits_to_kill
+            while i > 0:
+                fruit = cell.fruit
+                if j > 0: # fruits part of the recipe leave
+                    if fruit:
+                        fruit.leave()
+                        cell.predict_fruit_exit()
+                    j -= 1
+                else: # the other fruits keep looping
+                    if fruit:
+                        fruit.loop()
+                        cell.predict_fruit_move()
+                cell = cell.prevcell
+                i -= 1
+                        
+        # at this line, cell is the first non-waiting cell
+        # non-waiting looping cells
+        while cell != wcell:
+            fruit = cell.fruit
+            if fruit and fruit.is_looping: # waiting fruits dont move
+                # and leaving fruits have been taken care of above
+                cell.predict_fruit_move()
+            cell = cell.prevcell
+        
+        # entrance cells
+        jcell = self.J
+        jfruit = jcell.fruit
+        if jfruit:
+            if jcell.nextcell.prevcell.fruit:
+                jfruit.wait()
+            else:
+                jfruit.loop()
+                jcell.predict_fruit_move()
+        
+        cell = jcell.prevcell
+        while cell != self.E.prevcell: # E.prevcell is None
+            fruit = cell.fruit
+            if fruit:
+                next_fruit = cell.nextcell.fruit
+                if next_fruit and next_fruit.is_waiting: 
+                    # fruit waiting ahead: wait
+                    fruit.wait()
+                else:# no waiting fruit ahead: can loop
+                    fruit.loop()
+                    cell.predict_fruit_move()
+            cell = cell.prevcell
+        
+        self.phase = 'predict'
+        ev = BoardPredictedEvent()
         self._em.publish(ev)
 
 
@@ -336,11 +418,31 @@ class Board():
 
     def on_fruit_spawned(self, ev):
         """ When a fruit is spawned, add it to the list. """
-        self.fruits.add(ev.fruit)
         
+        entrance = self.E
+        if entrance.fruit: # should spawn new fruit, but can't: game over!
+            logging.info('game over') # TODO: QuitEvent
         
-    def on_triggertrap(self, inputevt):
+        else: # if there's room
+            fruit = ev.fruit
+            fruit.cell = entrance
+            fruit.prevcell = entrance
+            if self.phase == 'progress':
+                fruit.nextcell = None
+            else: # phase is 'predict'
+                fruit.nextcell = entrance.nextcell
+            entrance.fruit = fruit
+            if entrance.nextcell.fruit:
+                fruit.wait()
+            self.fruits.add(fruit)
+            ev = FruitPlacedEvent(fruit)
+            self._em.publish(ev)
+            
+                
+        
+    def on_triggertrap(self, ev):
         """ User pushed the trap key. Try to trap a fruit. """
-        self.T.trap()
+        is_predict_phase = self.phase == 'predict'
+        self.T.do_trap(is_predict_phase)
         
         

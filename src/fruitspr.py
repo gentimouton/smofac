@@ -45,7 +45,7 @@ class FruitSpr(DirtySprite):
         
     
     def __repr__(self):
-        return '%d at %s' % (self.fruit, str(self.rect))
+        return '%d at %s' % (self.fruit.fruit_num, str(self.rect))
     def __str__(self):
         return self.__repr__()
         
@@ -55,29 +55,44 @@ class FruitSpr(DirtySprite):
         and shift the spr based on the current step of interpolation. 
         """
         fruit = self.fruit
-
-        # compute the speed vector
-        spd_x = spd_y = 0 # speed vector: how many px to move per step
-        if interp_step <= STEPS_PER_CELL / 2:
-            # 1st half of interpolation: join my prev cell and current cell
-            cell = fruit.prevcell
-        else:# 2nd half: join current cell and next cell
-            cell = fruit.cell
-        if cell.direction == DIR_UP: # the spr should move up
-            spd_y = -CELLSIZE / STEPS_PER_CELL
-        elif cell.direction == DIR_DOWN:
-            spd_y = CELLSIZE / STEPS_PER_CELL
-        elif cell.direction == DIR_LEFT:
-            spd_x = -CELLSIZE / STEPS_PER_CELL
-        elif cell.direction == DIR_RIGHT:
-            spd_x = CELLSIZE / STEPS_PER_CELL
         
-        # offset the first step of the spr such that at mid-model-tick,
-        # the spr will be right in the middle of cell
-        offset_x = (int(STEPS_PER_CELL / 2) - interp_step) * spd_x
-        offset_y = (int(STEPS_PER_CELL / 2) - interp_step) * spd_y
-        left = fruit.coords[0] * CELLSIZE - offset_x 
-        top = fruit.coords[1] * CELLSIZE - offset_y 
+        if fruit.is_waiting:
+            cell = fruit.cell
+            left = cell.coords[0] * CELLSIZE
+            top = cell.coords[1] * CELLSIZE
+            
+        else: # looping or leaving
+            # compute the speed vector
+            spd_x = spd_y = 0 # speed vector: how many px to move per step
+            if interp_step <= STEPS_PER_CELL / 2:
+                # 1st half of interpolation: join my prev cell and current cell
+                pcell = fruit.prevcell
+                if fruit.is_leaving:
+                    direction = pcell.load_dir or pcell.direction
+                else: # looping
+                    direction = pcell.direction
+            else:# 2nd half: join current cell and next cell
+                cell = fruit.cell
+                if fruit.is_leaving:
+                    direction = cell.load_dir or cell.direction
+                else: # looping
+                    direction = fruit.cell.direction
+                
+            if direction == DIR_UP: # the spr should move up
+                spd_y = -CELLSIZE / STEPS_PER_CELL
+            elif direction == DIR_DOWN:
+                spd_y = CELLSIZE / STEPS_PER_CELL
+            elif direction == DIR_LEFT:
+                spd_x = -CELLSIZE / STEPS_PER_CELL
+            elif direction == DIR_RIGHT:
+                spd_x = CELLSIZE / STEPS_PER_CELL
+            
+            # offset the first step of the spr such that at mid-model-tick,
+            # the spr will be right in the middle of cell
+            offset_x = (int(STEPS_PER_CELL / 2) - interp_step) * spd_x
+            offset_y = (int(STEPS_PER_CELL / 2) - interp_step) * spd_y
+            left = fruit.coords[0] * CELLSIZE - offset_x 
+            top = fruit.coords[1] * CELLSIZE - offset_y 
         
         self.rect = Rect(left, top, CELLSIZE, CELLSIZE)
         self.dirty = 1 

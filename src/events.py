@@ -19,11 +19,16 @@ class GameBuiltEvent():
         
 class BoardUpdatedEvent:
     pass
+class BoardPredictedEvent:
+    pass
 
 class FruitSpawnedEvent():
     def __init__(self, fruit):
         self.fruit = fruit
-
+class FruitPlacedEvent():
+    def __init__(self, fruit):
+        self.fruit = fruit
+        
 class FruitKilledEvent():
     def __init__(self, fruit):
         self.fruit = fruit
@@ -59,7 +64,7 @@ class FruitSpeedEvent:
 
 # components subscribed to TickEvent as "input" will be notified first,
 # then components with priority as "model", and finally the rest (views). 
-PRIO_TICK_INPUT = 1
+PRIO_TICK_CTRL = 1
 PRIO_TICK_MODEL = 2
 
 class EventManager:
@@ -87,7 +92,7 @@ class EventManager:
     def subscribe(self, ev_class, callback, priority=None):
         """ Register a callback for a particular event. """
         if ev_class == TickEvent:
-            if priority == PRIO_TICK_INPUT:
+            if priority == PRIO_TICK_CTRL:
                 self._tc_callbacks.add(callback)
             elif priority == PRIO_TICK_MODEL:
                 self._tm_callbacks.add(callback)

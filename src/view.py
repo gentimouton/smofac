@@ -1,6 +1,7 @@
 from constants import RESOLUTION, BG_COLOR, FONT_SIZE, STEPS_PER_CELL
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
-    GameBuiltEvent, TickEvent, FruitKilledEvent, FruitSpawnedEvent, FruitSpeedEvent
+    GameBuiltEvent, TickEvent, FruitKilledEvent, FruitSpeedEvent, \
+    FruitPlacedEvent
 from fruitspr import FruitSpr
 from pygame.rect import Rect
 from pygame.sprite import LayeredDirty
@@ -43,7 +44,7 @@ class PygameDisplay:
         em.subscribe(BoardBuiltEvent, self.on_board_built)
         em.subscribe(GameBuiltEvent, self.on_game_built)
         em.subscribe(FruitKilledEvent, self.on_fruit_killed)
-        em.subscribe(FruitSpawnedEvent, self.on_fruit_spawned)
+        em.subscribe(FruitPlacedEvent, self.on_fruit_spawned)
         em.subscribe(FruitSpeedEvent, self.on_speed_change)
         
         
