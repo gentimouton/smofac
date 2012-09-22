@@ -23,10 +23,14 @@ class Game:
         # build the recipe tree = dict of dict of ... of dict, 
         # depth = length of the longest recipe 
         self.recipes = {}
-        max_recipe_length = 0 # length of the longest recipe
+        longest_recipe_length = 0 # length of the longest recipe
+        lowest_recipe_score = 0 # arbitrary value to start with
+        # it can be that some recipes have a negative value!
+        
         for recipe, score in RECIPES.items():
-            max_recipe_length = max(max_recipe_length, len(recipe))
-            
+            longest_recipe_length = max(longest_recipe_length, len(recipe))
+            lowest_recipe_score = min(lowest_recipe_score, score)
+        
             # build the tree-path for that recipe 
             bucket = self.recipes
             for fruit in recipe:
@@ -35,10 +39,11 @@ class Game:
                 bucket = bucket[fruit]
             bucket['score'] = score # no fruit should be named 'score'!
         
-        self.max_recipe_length = max_recipe_length
+        #self.max_recipe_length = longest_recipe_length # TODO: do I need this?
+        self.lowest_recipe_score = lowest_recipe_score
         
         # create the board
-        self.board = Board(self, em, self.mapname, max_recipe_length)
+        self.board = Board(self, em, self.mapname, longest_recipe_length)
         
         self.fruit_speed = FRUIT_SPEED # in cells per second
         # 1 tick for anticipating and setting movement direction, 
@@ -57,19 +62,16 @@ class Game:
         
         
     def recipe_match(self, fruit_list):
-        """ When fruits match one or more recipes, 
-        return the number of fruits that match the recipe with highest score, 
-        and increase the score.
-        When fruits match the beginning of a recipe, we need to wait for more,
-        and return -1 for "wait for more".
-        When fruits don't match any recipe or beginning of recipe,
-        return 0.
-        Some of the fruits in the list may be None: that spot has no fruit.
+        """ Return whether fruits in the waiting cells should wait some more.
+        If fruits dont need to wait, return the number of fruits to kill.
+        If number of fruits to kill is 0, then all fruits should keep looping. 
+        Some of the fruits in the list may be None;
+        it means that spot has no fruit.
         """
         bucket = self.recipes
-        best_recipe_score = (None, -1) # store the matching recipe with highest score
-        # TODO: -1 means that recipes with scores below 0 won't be able to leave!
-        saw_mismatch = False
+        # store the matching recipe with highest score
+        best_recipe_score = (None, self.lowest_recipe_score - 1) 
+        saw_mismatch = False # whether a prefix of the fruit list does NOT match any recipe prefix
         
         for i, fruit in enumerate(fruit_list):
             if not fruit: # a hole means that so far, 
@@ -91,7 +93,7 @@ class Game:
         if recipe: # a recipe matches
             if not saw_mismatch and self._is_prefix_of_better_recipe(recipe): 
                 # beginning of a longer recipe: wait for more fruits
-                return -1
+                return True, -1
             else: # either saw a mismatch, or the recipe takes all possible slots
                 # update the score, and process the fruits
                 self.score += score
@@ -102,13 +104,13 @@ class Game:
                     ev = RecipeMatchEvent(recipe, self.score, score)
                 self._em.publish(ev)
                 # tell the board how many fruits to kill
-                return len(recipe)
+                return False, len(recipe)
                     
         else: # no entire recipe matches
             if not saw_mismatch: # only the beginning of a recipe was found
-                return -1
+                return True, -1
             else: # no match and not even the beginning of a match: keep moving 
-                return 0
+                return False, 0
 
 
     def _is_prefix_of_better_recipe(self, recipe):
@@ -124,14 +126,23 @@ class Game:
                 logging.error('Recipe should have matched a bucket')
                 return False # process the fruits anyway
 
-        # if another recipe in the bucket, it means prefix
+        # sanity check: does the recipe exist?
         if 'score' not in bucket:
             logging.error('\'score\' should have been in bucket.')
             return False # process that mess if possible...
-                    
-        return len(bucket) > 1 # 1 because 'score' is one of the leaves
-
-
+        
+        max_suffix_score = self.__highest_bucket_recipe(bucket)
+        return max_suffix_score > bucket['score']
+        
+        
+    def __highest_bucket_recipe(self, bucket):
+        """ Return (recipe, score) of the recipe with highest score
+        in the bucket """
+        node_score = [bucket['score']]
+        children_scores = [self.__highest_bucket_recipe(bucket[child]) 
+                           for child in bucket if child != 'score']
+        return max(node_score + children_scores)
+            
         
     def on_tick(self, tickevt):
         """ If it's time, ask the board to move the fruits. """

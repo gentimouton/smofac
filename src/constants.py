@@ -2,14 +2,14 @@
 # TODO: make a config file
 
 # mechanics config
-SPAWN_PERIOD = 2 # spawn a fruit every how many seconds?
-FRUIT_SPEED = 1 # in cells per second
+SPAWN_PERIOD = 1 # spawn a fruit every how many seconds?
+FRUIT_SPEED = 4 # in cells per second
 # thus there is a fruit spawned every SPAWN_PERIOD * FRUIT_SPEED cells
 # careful: if FRUIT_SPEED < 1/SPAWN_PERIOD, the 2nd fruit causes game over 
 
 
-RNGSEED = 0
-MAPNAME = 'small.txt'
+RNGSEED = 1
+MAPNAME = 'medium.txt'
 RECIPES_MADE_WIN_CONDITION = 8 # how many recipes to make to win 
 
 # map constants
@@ -52,8 +52,9 @@ xyx = {('S', 'K', 'S'):10,
        }
 
 RECIPES = {}
-RECIPES.update(doubles)
-#RECIPES.update(triples)
+#RECIPES.update(doubles)
+RECIPES.update(triples)
+RECIPES.update(quads)
 
 
 # graphics config
@@ -70,19 +71,19 @@ BLENDER_COLOR = (155, 155, 155)
 
 
 # frame rate, per second
-FPS = 52
+FPS = 30
 
 # How many positions a fruit can take in one cell.
 # If even number, the first interpolation step will be right between 2 cells.
 # The user may not know which cell the fruit belongs to. 
 # Thus, pick odd numbers.
 # Also, it should ideally be a divider of FPS to avoid jittery movement. 
-STEPS_PER_CELL = 13
+STEPS_PER_CELL = 5
 
 # Width and height of cells, in px.
 # Should be a multiple of STEPS_PER_CELL, otherwise there may be 
 # a slight jittery movement due to float rounding
-CELLSIZE = 52
+CELLSIZE = 50
 
 # Width and height of the screen in px. Better if multiple of CELLSIZE,
 # otherwise there is a stripe left over at bottom and/or right of the screen.

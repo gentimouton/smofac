@@ -98,8 +98,6 @@ class Cell(Sprite):
             # The fruit's next cell has been predicted 
             # by the previous prediction tick.
             tcell = myfruit.nextcell # AND NOT self.nextcell!!!
-            if not tcell:
-                print('Error')
             myfruit.cell = tcell
             myfruit.nextcell = None # indicates we're in movement phase to the view
             myfruit.prevcell = self

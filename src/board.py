@@ -319,15 +319,16 @@ class Board():
         wcell = self.W
         # get all the fruits in the waiting cells
         wzone_fruits = self.get_waitingzone_fruits()
+
         # ask the game if there's any recipe matching
-        num_fruits_to_kill = self.game.recipe_match(wzone_fruits)
+        should_wait, num_fruits_to_kill = self.game.recipe_match(wzone_fruits)
         # iterate over the waiting cells
         i = self.waitzone_length
         cell = wcell
         # all fruits until the hole must wait; 
         # fruits after the hole must loop
         
-        if num_fruits_to_kill == -1:# beginning of a match 
+        if should_wait:# beginning of a match 
             seen_hole = False
             while i > 0:
                 fruit = cell.fruit
@@ -343,16 +344,7 @@ class Board():
                 cell = cell.prevcell
                 i -= 1
             
-        elif num_fruits_to_kill == 0:# no recipe match: all fruits keep looping!
-            while i > 0:
-                fruit = cell.fruit
-                if fruit: # can be None if the cell has no fruit
-                    fruit.loop()
-                    cell.predict_fruit_move()
-                cell = cell.prevcell
-                i -= 1
-            
-        elif num_fruits_to_kill > 0: # recipe match 
+        else:
             j = num_fruits_to_kill
             while i > 0:
                 fruit = cell.fruit
