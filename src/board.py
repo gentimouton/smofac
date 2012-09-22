@@ -1,8 +1,7 @@
 from cell import Cell
-from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT, FRUIT_SPEED
-from events import BoardBuiltEvent, TickEvent, BoardUpdatedEvent, \
-    PRIO_TICK_MODEL, FruitKilledEvent, AccelerateFruitsEvent, DecelerateFruitsEvent, \
-    FruitSpeedEvent, FruitSpawnedEvent, BoardPredictedEvent, FruitPlacedEvent
+from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT
+from events import BoardBuiltEvent, BoardUpdatedEvent, FruitKilledEvent, \
+    FruitSpawnedEvent, BoardPredictedEvent, FruitPlacedEvent
 from input import TriggerTrapEvent
 from spawner import Spawner
 import logging
@@ -359,10 +358,9 @@ class Board():
                         cell.predict_fruit_move()
                 cell = cell.prevcell
                 i -= 1
-                        
-        # at this line, cell is the first non-waiting cell
-        # non-waiting looping cells
-        while cell != wcell:
+        
+        # at this line, cell is the first non-waiting looping cell
+        while cell != wcell: # process all the non-waiting looping cells
             fruit = cell.fruit
             if fruit and fruit.is_looping: # waiting fruits dont move
                 # and leaving fruits have been taken care of above

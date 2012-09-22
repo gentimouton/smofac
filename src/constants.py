@@ -2,13 +2,12 @@
 # TODO: make a config file
 
 # mechanics config
-SPAWN_PERIOD = 1 # spawn a fruit every how many seconds?
+SPAWN_PERIOD = 2 # spawn a fruit every how many seconds?
 FRUIT_SPEED = 4 # in cells per second
 # thus there is a fruit spawned every SPAWN_PERIOD * FRUIT_SPEED cells
 # careful: if FRUIT_SPEED < 1/SPAWN_PERIOD, the 2nd fruit causes game over 
 
-
-RNGSEED = 1
+RNGSEED = 66
 MAPNAME = 'medium.txt'
 RECIPES_MADE_WIN_CONDITION = 8 # how many recipes to make to win 
 

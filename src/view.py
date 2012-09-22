@@ -187,7 +187,8 @@ class PygameDisplay:
         """ Triggered when the fruit speed is changed. 
         TODO: Slow down the interpolation of the fruits position.
         """
-        speed = ev.speed
+        model_mvt_timer = 1000 / ev.speed 
+        self.base_spr_timer = model_mvt_timer / STEPS_PER_CELL
         
 
 def main():

@@ -39,7 +39,6 @@ class Game:
                 bucket = bucket[fruit]
             bucket['score'] = score # no fruit should be named 'score'!
         
-        #self.max_recipe_length = longest_recipe_length # TODO: do I need this?
         self.lowest_recipe_score = lowest_recipe_score
         
         # create the board
@@ -50,7 +49,7 @@ class Game:
         # and another for actually moving fruits
         self.base_fruit_timer = 1000. / self.fruit_speed / 2 
         self.fruit_mvt_timer = self.base_fruit_timer # decreased each clock tick
-        self.fruit_mvt_phase = False # 0 for prediction, 1 for actual movement 
+        self.fruit_mvt_phase = False # whether currently in movement phase 
         
         self._em = em
         em.subscribe(TickEvent, self.on_tick, PRIO_TICK_MODEL)
@@ -142,11 +141,13 @@ class Game:
     def on_faster_fruits(self, ev):
         """ Increase the speed of the fruits """
         self.fruit_speed += .2 # by 0.2 cell per sec
+        self.base_fruit_timer = 1000. / self.fruit_speed / 2 
         ev = FruitSpeedEvent(self.fruit_speed)
         self._em.publish(ev)
 
     def on_slower_fruits(self, ev):
         """ Decrease the speed of fruits """
         self.fruit_speed -= .2
+        self.base_fruit_timer = 1000. / self.fruit_speed / 2 
         ev = FruitSpeedEvent(self.fruit_speed)
         self._em.publish(ev)

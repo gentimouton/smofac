@@ -13,14 +13,12 @@ def main():
 
     # init all components
     em = EventManager()
-    
     view = PygameDisplay(em) # must be created before the model
     game = Game(em)
     keyboard = InputController(em)
     
     clock = Clock(em)
     clock.start() # start the main loop
-    
     
 if __name__ == "__main__":
     main()
