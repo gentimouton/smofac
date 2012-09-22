@@ -91,7 +91,9 @@ class Game:
         
         recipe, score = best_recipe_score
         if recipe: # a recipe matches
-            if not saw_mismatch and self._is_prefix_of_better_recipe(recipe): 
+            max_suffix_score = self.__highest_bucket_recipe(bucket)
+            is_prefix_of_better_recipe = max_suffix_score > score 
+            if not saw_mismatch and is_prefix_of_better_recipe:
                 # beginning of a longer recipe: wait for more fruits
                 return True, -1
             else: # either saw a mismatch, or the recipe takes all possible slots
@@ -112,28 +114,6 @@ class Game:
             else: # no match and not even the beginning of a match: keep moving 
                 return False, 0
 
-
-    def _is_prefix_of_better_recipe(self, recipe):
-        """ return True if list of fruits is a strict prefix of a recipe
-        worth more points. """
-
-        bucket = self.recipes
-        # find the recipe's bucket
-        for fruit in recipe:
-            if fruit.fruit_type in bucket:
-                bucket = bucket[fruit.fruit_type] # keep going down the tree
-            else:
-                logging.error('Recipe should have matched a bucket')
-                return False # process the fruits anyway
-
-        # sanity check: does the recipe exist?
-        if 'score' not in bucket:
-            logging.error('\'score\' should have been in bucket.')
-            return False # process that mess if possible...
-        
-        max_suffix_score = self.__highest_bucket_recipe(bucket)
-        return max_suffix_score > bucket['score']
-        
         
     def __highest_bucket_recipe(self, bucket):
         """ Return (recipe, score) of the recipe with highest score
