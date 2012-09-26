@@ -1,7 +1,7 @@
 from constants import RESOLUTION, BG_COLOR, FONT_SIZE, STEPS_PER_CELL
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
-    GameBuiltEvent, TickEvent, FruitKilledEvent, FruitSpeedEvent, \
-    FruitPlacedEvent
+    GameBuiltEvent, TickEvent, FruitKilledEvent, FruitSpeedEvent, FruitPlacedEvent, \
+    QuitEvent
 from fruitspr import FruitSpr
 from pygame.rect import Rect
 from pygame.sprite import LayeredDirty
@@ -9,7 +9,6 @@ from pygame.surface import Surface
 from widgets import TextLabelWidget, RecipesWidget, CPUDisplayWidget
 import logging
 import pygame
-import time
 
 
 
@@ -17,7 +16,8 @@ class PygameDisplay:
     
     def __init__(self, em):
 
-        pygame.init() # OK to init multiple times
+        pygame.display.init() # OK to init multiple times
+        pygame.font.init()
         
         self._em = em
         
@@ -46,7 +46,7 @@ class PygameDisplay:
         em.subscribe(FruitKilledEvent, self.on_fruit_killed)
         em.subscribe(FruitPlacedEvent, self.on_fruit_spawned)
         em.subscribe(FruitSpeedEvent, self.on_speed_change)
-        
+        em.subscribe(QuitEvent, self.on_quit)
         
     def _build_gui(self):
         """ Add a score widget on the right """
@@ -151,6 +151,9 @@ class PygameDisplay:
     def on_tick(self, ev):
         """ Blit the active board elements and the GUI on the screen. """
         
+        if not pygame.display.get_init(): # if the display is ON 
+            return
+        
         # spr positions
         duration = ev.loopduration
         self.spr_timer -= duration
@@ -174,7 +177,7 @@ class PygameDisplay:
         gui.update() # call update() on each sprite of the group
         fruits.update(duration) # reset the dirty flag to 0
         #collect the display areas that need to be redrawn
-        dirty_gui = gui.draw(screen)  
+        dirty_gui = gui.draw(screen)
         dirty_fruits = fruits.draw(screen)
         dirty_rects = dirty_gui + dirty_fruits
         pygame.display.update(dirty_rects) # redisplay those areas only
@@ -184,16 +187,12 @@ class PygameDisplay:
 
 
     def on_speed_change(self, ev):
-        """ Triggered when the fruit speed is changed. 
-        TODO: Slow down the interpolation of the fruits position.
-        """
+        """ When the fruit speed changes, update the speed of fruit sprites. """
         model_mvt_timer = 1000 / ev.speed 
         self.base_spr_timer = model_mvt_timer / STEPS_PER_CELL
         
-
-def main():
-    return # TODO: display the GUI. Close when user presses ESC.
-
-
-if __name__ == "__main__":
-    main()
+    
+    def on_quit(self, ev):
+        """ Shut down the display """
+        pygame.display.quit()
+        

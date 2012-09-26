@@ -5,7 +5,7 @@ from game import Game
 from input import InputController
 from view import PygameDisplay
 import logging
-
+import sys
 
 def main():
 
@@ -19,6 +19,7 @@ def main():
     
     clock = Clock(em)
     clock.start() # start the main loop
+    sys.exit()
     
 if __name__ == "__main__":
     main()

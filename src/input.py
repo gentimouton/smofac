@@ -10,7 +10,7 @@ import pygame
 class InputController:
 
     def __init__(self, em):
-        pygame.init() # OK to init multiple times
+        # no need to pygame.init() before: events dont need any module  
         self._em = em
         self._em.subscribe(TickEvent, self.on_tick, PRIO_TICK_CTRL)
         

@@ -37,8 +37,6 @@ class Clock():
                 sleep(sleepduration)
 
             self.elapsed_frames += 1
-    
-
 
     
     def on_quit(self, ev):
