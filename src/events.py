@@ -53,6 +53,21 @@ class TriggerTrapEvent():
     pass
 
 
+class ValidateEvent():
+    # player pushed Enter
+    pass
+
+# Should these 4 events be merged in a single ArrowKeyEvent?
+class MoveUpEvent():
+    pass
+class MoveDownEvent():
+    pass
+class MoveLeftEvent():
+    pass
+class MoveRightEvent():
+    pass
+
+
 class FruitSpeedEvent:
     def __init__(self, speed):
         self.speed = speed#change the speed of fruits

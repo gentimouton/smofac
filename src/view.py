@@ -174,7 +174,7 @@ class PygameDisplay:
         # clear the window from all the sprites, replacing them with the bg
         gui.clear(screen, bg) 
         fruits.clear(screen, bg)
-        gui.update() # call update() on each sprite of the group
+        gui.update(duration) # call update() on each sprite of the group
         fruits.update(duration) # reset the dirty flag to 0
         #collect the display areas that need to be redrawn
         dirty_gui = gui.draw(screen)

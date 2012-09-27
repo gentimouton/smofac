@@ -1,5 +1,6 @@
 from constants import FONT_SIZE, FRUIT_COLORS
-from events import TickEvent
+from events import TickEvent, MoveUpEvent, MoveDownEvent, MoveRightEvent, \
+    MoveLeftEvent, ValidateEvent
 from pygame.font import Font
 from pygame.locals import RLEACCEL, SRCALPHA
 from pygame.rect import Rect
@@ -51,7 +52,9 @@ class TextLabelWidget(Widget):
         self.bgcolor = bgcolor
 
         self.text = text
-        self.image = Surface(self.rect.size)
+        #self.image = Surface(self.rect.size) # needed?
+        
+        self.dirty = 1 # added [tho] 
         
 
     def on_textevent(self, event):
@@ -62,12 +65,11 @@ class TextLabelWidget(Widget):
         self.dirty = 1
     
         
-    def update(self):
+    def update(self, duration):
         
         if self.dirty == 0:
             return
         
-        # TODO: is bliting on existing surf faster than creating a new surface?
         size = self.rect.size
         txtcolor = self.txtcolor
         bgcolor = self.bgcolor
@@ -91,7 +93,132 @@ class TextLabelWidget(Widget):
         #self.dirty = 0 # no need to set to 0: this is done by LayeredDirty
         
 
+
+
 ##################################
+
+class MenuEntryWidget(TextLabelWidget):
+    """ An entry in a menu widget. """
+    
+    def __init__(self, em, label, evt, rect,
+                 ntxtcolor, nbgcolor, stxtcolor, sbgcolor):
+        """ ntxtcolor when non-selected, 
+        stxtcolor when selected. 
+        evt is the event to publish when the entry is pushed/executed.
+        """
+        TextLabelWidget.__init__(self, em, label, {}, rect,
+                                 ntxtcolor, nbgcolor)
+        self.stxtcolor = stxtcolor
+        self.sbgcolor = sbgcolor
+        self.ntxtcolor = ntxtcolor
+        self.nbgcolor = nbgcolor
+        self.exec_event = evt
+        # self.dirty set to 1 by TextLabelWidget
+        
+    def select(self):
+        self.txtcolor = self.stxtcolor
+        self.bgcolor = self.sbgcolor
+        self.dirty = 1
+        
+    def unselect(self):
+        self.txtcolor = self.ntxtcolor
+        self.bgcolor = self.nbgcolor
+        self.dirty = 1
+    
+    def execute(self):
+        """ Publish the event this entry was associated with. """
+        ev = self.exec_event()
+        self._em.publish(ev)
+        
+                    
+    
+        
+class MenuWidget(Widget):
+    """ A menu is made of several entries, each with a text label.
+    """
+     
+    def __init__(self, em, evtlabels, rect=None,
+                 ntxtcolor=(0, 0, 255), nbgcolor=(0, 0, 55),
+                 stxtcolor=(0, 255, 0), sbgcolor=(0, 55, 0)):
+        """ labels is a list of strings. """
+        Widget.__init__(self, em)
+        
+        #MoveDownEvent, MoveRightEvent, MoveLeftEvent
+        self._em.subscribe(MoveUpEvent, self.on_prev)
+        self._em.subscribe(MoveLeftEvent, self.on_prev)
+        self._em.subscribe(MoveDownEvent, self.on_next)
+        self._em.subscribe(MoveRightEvent, self.on_next)
+        self._em.subscribe(ValidateEvent, self.on_validate)
+        
+        if not rect:
+            # TODO: dimensions are hardcoded
+            rect = Rect(0, 0, 100 + len(evtlabels) * 100, len(evtlabels) * 100)
+        self.rect = rect
+            
+        self.entries = []
+        for i, evtlabel in enumerate(evtlabels):
+            label, evt = evtlabel 
+            rec = Rect(i * 100, i * 100, 200, 50)
+            entry = MenuEntryWidget(em, label, evt, rec,
+                                    ntxtcolor, nbgcolor,
+                                    stxtcolor, sbgcolor)
+            self.entries.append(entry)
+            
+        self.current_entry = 0
+        try:
+            self.entries[0].select()
+        except IndexError: # labels was []
+            logging.error('No entry labels were given to a menu widget.')
+        self.dirty = 1
+    
+    
+    def on_next(self, ev):
+        """ Select next entry. """
+        self.entries[self.current_entry].unselect()
+        self.current_entry = (self.current_entry + 1) % len(self.entries)
+        self.entries[self.current_entry].select()
+        self.dirty = 1
+
+    def on_prev(self, ev):
+        """ Select previous entry """
+        self.entries[self.current_entry].unselect()
+        self.current_entry = (self.current_entry - 1) % len(self.entries)  
+        self.entries[self.current_entry].select()
+        self.dirty = 1
+        
+    def on_validate(self, ev):
+        """ Execute the selected entry """
+        self.entries[self.current_entry].execute()
+        
+        
+    def update(self, duration):
+        """ reblit the entries on my rect """
+        if self.dirty == 0:
+            return
+        
+        # make the transparent box
+        size = self.rect.size
+        img = Surface(size, SRCALPHA) 
+        transparency = 50 # 0 = transparent, 255 = opaque
+        img.fill((0, 0, 0, transparency))
+        img = img.convert_alpha() # TODO: alpha or color key?
+        
+        # blit each entry
+        for entry in self.entries:
+            entry.update(duration)
+            img.blit(entry.image, entry.rect)
+            
+        self.image = img
+        #self.dirty = 0 # set by LayeredDirty
+    
+    
+    
+        
+        
+
+
+##################################
+
 
 CPU_DISPLAY_FREQ = 2  # how many times per second to update the CPU display 
 
@@ -141,7 +268,7 @@ class CPUDisplayWidget(Widget):
         self.dirty = 1 # schedule for reblit
 
         
-    def update(self):
+    def update(self, duration):
         """ Reblit text if dirty. """
         if self.dirty == 0:
             return
@@ -248,12 +375,12 @@ class RecipesWidget(Widget):
             
 
     def on_recipe_match(self, event):
-        """ Highlight the recipe that just got matched. """        
+        """ TODO: Highlight the recipe that just got matched. """        
         evt_recipe_attr = self.events_attrs[event.__class__]
         recipe = str(getattr(event, evt_recipe_attr))
         
         
-    def update(self):
+    def update(self, duration):
         """ Nothing to do, really ...
         But widgets in sprite groups need this method.
         """

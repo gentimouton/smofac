@@ -1,7 +1,8 @@
 from events import QuitEvent, TriggerTrapEvent, TickEvent, PRIO_TICK_CTRL, \
-    AccelerateFruitsEvent, DecelerateFruitsEvent
+    AccelerateFruitsEvent, DecelerateFruitsEvent, MoveUpEvent, MoveDownEvent, \
+    MoveLeftEvent, MoveRightEvent, ValidateEvent
 from pygame.locals import KEYDOWN, K_ESCAPE, QUIT, K_SPACE, K_EQUALS, K_PLUS, \
-    K_MINUS, K_UNDERSCORE
+    K_MINUS, K_UNDERSCORE, K_UP, K_DOWN, K_LEFT, K_RIGHT, K_RETURN
 import logging
 import pygame
 
@@ -34,6 +35,18 @@ class InputController:
                 
                 elif key == K_SPACE:
                     ev = TriggerTrapEvent()
+                
+                elif key == K_RETURN:
+                    ev = ValidateEvent()
+                    
+                elif key == K_UP:
+                    ev = MoveUpEvent()
+                elif key == K_DOWN:
+                    ev = MoveDownEvent()
+                elif key == K_LEFT:
+                    ev = MoveLeftEvent()
+                elif key == K_RIGHT:
+                    ev = MoveRightEvent()
                     
                 elif key in (K_EQUALS, K_PLUS):
                     # accelerate the speed of the fruits
