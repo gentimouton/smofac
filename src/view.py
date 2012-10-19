@@ -1,6 +1,6 @@
 from constants import RESOLUTION, BG_COLOR, FONT_SIZE, STEPS_PER_CELL
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
-    GameBuiltEvent, TickEvent, FruitKilledEvent, FruitSpeedEvent, FruitPlacedEvent, \
+    GameBuiltEvent, VTickEvent, FruitKilledEvent, FruitSpeedEvent, FruitPlacedEvent, \
     QuitEvent
 from fruitspr import FruitSpr
 from pygame.rect import Rect
@@ -40,7 +40,7 @@ class PygameDisplay:
         # build GUI
         self.gui = self._build_gui() # return a sprite group
 
-        em.subscribe(TickEvent, self.on_tick)
+        em.subscribe(VTickEvent, self.on_tick)
         em.subscribe(BoardBuiltEvent, self.on_board_built)
         em.subscribe(GameBuiltEvent, self.on_game_built)
         em.subscribe(FruitKilledEvent, self.on_fruit_killed)
@@ -98,6 +98,7 @@ class PygameDisplay:
         model_mvt_timer = 1000 / ev.fruit_speed 
         self.base_spr_timer = model_mvt_timer / STEPS_PER_CELL
         self.spr_timer = self.base_spr_timer
+               
         
         
     def on_board_built(self, ev):

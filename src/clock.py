@@ -1,5 +1,5 @@
 from constants import FPS
-from events import QuitEvent, TickEvent
+from events import QuitEvent, TickEvent, CTickEvent, MTickEvent, VTickEvent
 from time import sleep, time
 import logging
 
@@ -25,15 +25,24 @@ class Clock():
                 
         while self.keep_going:
             beforetick = time()
+            
             wholeduration = (sleepduration + workduration)
-            event = TickEvent(wholeduration * 1000, workduration * 1000)
-            self._em.publish(event) # tick all registered components
+            whole_millis = wholeduration * 1000
+            work_millis = workduration * 1000
+            
+            event = CTickEvent(whole_millis, work_millis)
+            self._em.publish(event) # tick controllers
+            event = MTickEvent(whole_millis, work_millis)
+            self._em.publish(event) # tick models
+            event = VTickEvent(whole_millis, work_millis)
+            self._em.publish(event) # tick views
 
             aftertick = time()
-            workduration = aftertick - beforetick #0 on first tick
+            workduration = aftertick - beforetick
+            
             sleepduration = 1 / self.fps - workduration
-            sleepduration = max(0, sleepduration)# dont sleep if late
-            if sleepduration > 0: 
+            sleepduration = max(0, sleepduration)
+            if sleepduration > 0: # dont sleep if late 
                 sleep(sleepduration)
 
             self.elapsed_frames += 1

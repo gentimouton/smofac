@@ -1,6 +1,6 @@
 from constants import FONT_SIZE, FRUIT_COLORS
-from events import TickEvent, MoveUpEvent, MoveDownEvent, MoveRightEvent, \
-    MoveLeftEvent, ValidateEvent
+from events import MoveUpEvent, MoveDownEvent, MoveRightEvent, \
+    MoveLeftEvent, ValidateEvent, VTickEvent
 from pygame.font import Font
 from pygame.locals import RLEACCEL, SRCALPHA
 from pygame.rect import Rect
@@ -231,7 +231,7 @@ class CPUDisplayWidget(Widget):
         """ text = to display at the start. """
         Widget.__init__(self, em)
         
-        em.subscribe(TickEvent, self.on_tick)
+        em.subscribe(VTickEvent, self.on_tick)
         self.display_timer = 1000 / CPU_DISPLAY_FREQ # in millis
         
         # gfx

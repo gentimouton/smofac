@@ -1,5 +1,5 @@
 from constants import SPAWN_PERIOD, RNGSEED, FRUIT_LIST
-from events import FruitSpawnedEvent, TickEvent, PRIO_TICK_CTRL
+from events import FruitSpawnedEvent, CTickEvent
 from fruit import Fruit
 import logging
 import random
@@ -12,7 +12,7 @@ class Spawner():
         self.fruits_spawned = 0 # ++ when a fruit appears
         self.cell = cell 
         self._em = em
-        em.subscribe(TickEvent, self.on_tick, PRIO_TICK_CTRL)
+        em.subscribe(CTickEvent, self.on_tick)
         
         
     def on_tick(self, ev):

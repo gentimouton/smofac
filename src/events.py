@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 
 class Event:
     def __repr__(self):
@@ -39,10 +39,18 @@ class RecipeMatchEvent():
         self.current_score = current_score
         self.recipe_score = recipe_score
 
+
 class TickEvent:
     def __init__(self, loopmillis, workmillis):
         self.loopduration = loopmillis # how long since last tick
         self.workduration = workmillis
+class CTickEvent(TickEvent): # controllers tick
+    pass
+class MTickEvent(TickEvent): # models tick
+    pass
+class VTickEvent(TickEvent): # views tick
+    pass
+
 
 class QuitEvent(): 
     # player wants to exit the game
@@ -76,84 +84,58 @@ class AccelerateFruitsEvent:
 class DecelerateFruitsEvent:
     pass#decrease the speed of the fruits
 
-# components subscribed to TickEvent as "input" will be notified first,
-# then components with priority as "model", and finally the rest (views). 
-PRIO_TICK_CTRL = 1
-PRIO_TICK_MODEL = 2
+
+
 
 class EventManager:
     
     def __init__(self):
-        """ Make 4 sets of callbacks:
-        1 for input components(= controllers), they have to be ticked first,
-        1 for the model components, ticked just after,
-        and 1 for the rendering/view components, ticked at the end.
-        Last list = non-tick events.
-        """
-        self._c_callbacks = set() # controller callbacks for tick event
-        self._tc_callbacks = set() # temporary controller callbacks
-        
-        self._m_callbacks = set() # model
-        self._tm_callbacks = set()
-        
-        self._v_callbacks = set() # view
-        self._tv_callbacks = set()
-        
-        self._callbacks = defaultdict(set) # map non-tick events to their callbacks
-        self._tmp_callbacks = defaultdict(set)
+        # map events to their callbacks
+        self._callbacks = defaultdict(set)
+        # store the callbacks added during this frame
+        self._new_callbacks = defaultdict(set) 
+        self.eventdq = deque()
+
+    def subscribe(self, ev_class, callback):
+        """ Register a callback for a particular event. """
+        self._new_callbacks[ev_class].add(callback)
         
 
-    def subscribe(self, ev_class, callback, priority=None):
-        """ Register a callback for a particular event. """
-        if ev_class == TickEvent:
-            if priority == PRIO_TICK_CTRL:
-                self._tc_callbacks.add(callback)
-            elif priority == PRIO_TICK_MODEL:
-                self._tm_callbacks.add(callback)
-            else: # views/renderers
-                self._tv_callbacks.add(callback)
-        else:# non-tick events
-            self._callbacks[ev_class].add(callback)
-        
-        
+
+    def join_new_listeners(self):
+        """ add new listener callbacks to the current callbacks """
+        if self._new_callbacks:
+            for evClass in self._new_callbacks:
+                self._callbacks[evClass] = self._callbacks[evClass].union(self._new_callbacks[evClass])
+            self._new_callbacks.clear() 
+
+   
     def publish(self, event):
-        """ Publish an event. 
-        Tick events go first to controllers, then models, then views.
-        """
-        ev_class = event.__class__
-        if ev_class == TickEvent:
-            # iterate over the callbacks: new callbacks will be added to _tc_... 
-            for cb in self._c_callbacks:
-                cb(event)
-            for cb in self._m_callbacks:
-                cb(event)
-            for cb in self._v_callbacks:
+        """ Publish an event.
+        New subscriber callbacks are added when tick events are processed.    
+        """        
+        
+        if event.__class__ in [CTickEvent, MTickEvent, VTickEvent]:
+            self.join_new_listeners() #necessary for at least the very first tick
+            while self.eventdq:
+                ev = self.eventdq.popleft()
+                
+                self.join_new_listeners()
+                for callback in self._callbacks[ev.__class__]: 
+                    # Some of these listeners may enqueue events on the fly.
+                    # Those new events will be treated within this while loop,
+                    # they don't have to wait for the next tick event.
+                    callback(ev)
+                
+                self.join_new_listeners()
+                
+            # finally, post tick event
+            for cb in self._callbacks[event.__class__]:
                 cb(event)
                 
-            # iterate over the new callbacks
-            while self._tc_callbacks or self._tm_callbacks or self._tv_callbacks:
-                # incorporate the new callbacks
-                self._c_callbacks = self._c_callbacks.union(self._tc_callbacks)
-                self._m_callbacks = self._m_callbacks.union(self._tm_callbacks)
-                self._v_callbacks = self._v_callbacks.union(self._tv_callbacks)
-                # copy the new callback sets
-                c_cbs_cpy = self._tc_callbacks # controller callbacks copy
-                m_cbs_cpy = self._tm_callbacks
-                v_cbs_cpy = self._tv_callbacks
-                # empty the new callback sets
-                self._tc_callbacks = set()
-                self._tm_callbacks = set()
-                self._tv_callbacks = set()
-                # iterate over the copies
-                for cb in c_cbs_cpy:
-                    cb(event)# might add new subscriber callbacks to self._t?_callbacks
-                for cb in m_cbs_cpy:
-                    cb(event)
-                for cb in v_cbs_cpy:
-                    cb(event)
-                    
+            self.join_new_listeners()
+            
+            
         else: # non-tick event
-            for cb in self._callbacks[ev_class]:
-                cb(event)
-            # TODO: non-tick events may have the same problem as tick events
-            # So there may need to be the same structure of set-copies.
+            self.eventdq.append(event)
+            

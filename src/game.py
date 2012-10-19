@@ -4,8 +4,8 @@ View: score and recipe widgets on the right, board on the left.
 """
 from board import Board
 from constants import MAPNAME, RECIPES, RECIPES_MADE_WIN_CONDITION, FRUIT_SPEED
-from events import RecipeMatchEvent, GameBuiltEvent, QuitEvent, TickEvent, \
-    FruitSpeedEvent, PRIO_TICK_MODEL, AccelerateFruitsEvent, DecelerateFruitsEvent
+from events import RecipeMatchEvent, GameBuiltEvent, QuitEvent, MTickEvent, \
+    FruitSpeedEvent, AccelerateFruitsEvent, DecelerateFruitsEvent
 import logging
 
 
@@ -52,7 +52,7 @@ class Game:
         self.fruit_mvt_phase = False # whether currently in movement phase 
         
         self._em = em
-        em.subscribe(TickEvent, self.on_tick, PRIO_TICK_MODEL)
+        em.subscribe(MTickEvent, self.on_tick)
         em.subscribe(AccelerateFruitsEvent, self.on_faster_fruits)
         em.subscribe(DecelerateFruitsEvent, self.on_slower_fruits)
 
