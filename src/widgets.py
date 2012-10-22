@@ -7,6 +7,12 @@ from pygame.rect import Rect
 from pygame.sprite import DirtySprite
 from pygame.surface import Surface
 import logging
+import pygame
+
+
+# pygame inits
+pygame.display.init() # OK to init multiple times
+pygame.font.init()
 
 
 class Widget(DirtySprite):
