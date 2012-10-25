@@ -1,11 +1,12 @@
-from collections import defaultdict, deque
 from clock import Clock
+from collections import defaultdict, deque
 from constants import RESOLUTION, FONT_SIZE
 from events import QuitEvent, EventManager, VTickEvent
 from input import InputController
 from pygame.rect import Rect
 from pygame.sprite import LayeredDirty
 from pygame.surface import Surface
+from view import PygameDisplay
 from widgets import MenuWidget
 import logging
 import pygame
@@ -32,22 +33,29 @@ class MainDisplay(EventManager):
         
         # FSM of views
         fsm = {
-               'v1': {
+               'menu': {
                       'viewtype':MenuDisplay1,
-                      'transitions': {SwitchViewEvent: 'v2'}
+                      'transitions': {SwitchViewEvent: 'game'}
                       },
-               'v2': {
-                      'viewtype':MenuDisplay2,
-                      'transitions': {SwitchViewEvent: 'v1'}
+               'game': {
+                      'viewtype':PygameDisplay,
+                      'transitions': {SwitchViewEvent: 'menu'}
                       },
                }
         self._fsm = fsm
         em.subscribe(SwitchViewEvent, self.on_switchview)
+        self.switch_to_view('menu')
         
-        # the view registers to new events by itself
-        self.cur_view_name = 'v1'
-        self.cur_view = MenuDisplay1(self)
         
+    def switch_to_view(self, name):
+        """ Switch to menu or game view. """
+        if name == 'menu':
+            self.cur_view = MenuDisplay1(self)
+            self.cur_view_name = 'menu'
+        elif name == 'game':
+            self.cur_view = MenuDisplay2(self)
+            self.cur_view_name = 'game'
+
         
         
     def subscribe(self, ev_class, callback):
@@ -56,9 +64,11 @@ class MainDisplay(EventManager):
         """
         self._callbacks[ev_class].add(callback)
         self._em.subscribe(ev_class, self.forward_evt)
+
+    def unsubscribe(self, ev_class, callback):
+        pass # view components should not unsubscribe
         
-    
-    def join_new_listeners(self):
+    def update_listeners(self):
         pass
 
     
@@ -76,15 +86,15 @@ class MainDisplay(EventManager):
         
         
     def on_switchview(self, ev):
+        """ Switch to another view """
+        
+        for ev_class, callbacks in self._callbacks.items():
+            for cb in callbacks:
+                self._em.unsubscribe(ev_class, cb)
         self._callbacks.clear()
-        if self.cur_view_name == 'v1':
-            self.cur_view = MenuDisplay2(self)
-            self.cur_view_name = 'v2' 
-        else:
-            self.cur_view = MenuDisplay1(self)
-            self.cur_view_name = 'v1'
         
-        
+        view_name = 'game' if self.cur_view_name == 'menu' else 'menu'
+        self.switch_to_view(view_name)
         
         
         
@@ -113,7 +123,6 @@ class MenuDisplay:
         self.gui = self._build_gui() # return a sprite group
 
         em.subscribe(VTickEvent, self.on_tick)
-        em.subscribe(QuitEvent, self.on_quit)
 
 
     def _build_gui(self):
@@ -145,22 +154,19 @@ class MenuDisplay:
         # flip the screen
         pygame.display.flip()
 
-    def on_quit(self, ev):
-        """ Shut down the display """
-        pygame.display.quit()
-
 
 class MenuDisplay1(MenuDisplay):
+    evtlabels = [('game', SwitchViewEvent),
+                 ('quit', QuitEvent)
+                 ]
+
+class MenuDisplay2(MenuDisplay):
     evtlabels = [('switch', SwitchViewEvent),
                  ('quit', QuitEvent),
                  ('switch2', SwitchViewEvent),
                  ('quit2', QuitEvent)
                  ]
 
-class MenuDisplay2(MenuDisplay):
-    evtlabels = [('back', SwitchViewEvent),
-                 ('quit', QuitEvent)
-                 ]
         
 
 

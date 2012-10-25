@@ -2,9 +2,10 @@ from collections import defaultdict, deque
 
 class Event:
     def __repr__(self):
-        return str(self.__class__)
+        return self.__class__.__name__
     def __str__(self):
         return self.__repr__()
+    
 
 class BoardBuiltEvent(Event):
     def __init__(self, width, height, board):
@@ -12,35 +13,35 @@ class BoardBuiltEvent(Event):
         self.height = height
         self.board = board
 
-class GameBuiltEvent():
+class GameBuiltEvent(Event):
     def __init__(self, recipes, fruit_speed):
         self.recipes = recipes
         self.fruit_speed = fruit_speed
         
-class BoardUpdatedEvent:
+class BoardUpdatedEvent(Event):
     pass
-class BoardPredictedEvent:
+class BoardPredictedEvent(Event):
     pass
 
-class FruitSpawnedEvent():
+class FruitSpawnedEvent(Event):
     def __init__(self, fruit):
         self.fruit = fruit
-class FruitPlacedEvent():
+class FruitPlacedEvent(Event):
     def __init__(self, fruit):
         self.fruit = fruit
         
-class FruitKilledEvent():
+class FruitKilledEvent(Event):
     def __init__(self, fruit):
         self.fruit = fruit
               
-class RecipeMatchEvent():
+class RecipeMatchEvent(Event):
     def __init__(self, recipe, current_score, recipe_score):
         self.recipe = recipe
         self.current_score = current_score
         self.recipe_score = recipe_score
 
 
-class TickEvent:
+class TickEvent(Event):
     def __init__(self, loopmillis, workmillis):
         self.loopduration = loopmillis # how long since last tick
         self.workduration = workmillis
@@ -52,39 +53,43 @@ class VTickEvent(TickEvent): # views tick
     pass
 
 
-class QuitEvent(): 
-    # player wants to exit the game
-    pass
-
-class TriggerTrapEvent(): 
-    # player pushed the trap key
-    pass
+class QuitEvent(Event):
+    pass # player wants to exit the game
 
 
-class ValidateEvent():
-    # player pushed Enter
-    pass
+class TriggerTrapEvent(Event): 
+    pass # player pushed the trap key
 
-# Should these 4 events be merged in a single ArrowKeyEvent?
-class MoveUpEvent():
+
+class ValidateEvent(Event):
+    pass # player pushed Enter
+
+
+class MoveUpEvent(Event):
     pass
-class MoveDownEvent():
+class MoveDownEvent(Event):
     pass
-class MoveLeftEvent():
+class MoveLeftEvent(Event):
     pass
-class MoveRightEvent():
+class MoveRightEvent(Event):
     pass
 
 
-class FruitSpeedEvent:
+class FruitSpeedEvent(Event):
     def __init__(self, speed):
         self.speed = speed#change the speed of fruits
-class AccelerateFruitsEvent:
+class AccelerateFruitsEvent(Event):
     pass#Increase the speed of the fruits
-class DecelerateFruitsEvent:
+class DecelerateFruitsEvent(Event):
     pass#decrease the speed of the fruits
 
 
+
+# mode switching events
+class ToGameEvent(Event):
+    pass
+class ToMenuEvent(Event):
+    pass
 
 
 class EventManager:
@@ -93,22 +98,42 @@ class EventManager:
         # map events to their callbacks
         self._callbacks = defaultdict(set)
         # store the callbacks added during this frame
-        self._new_callbacks = defaultdict(set) 
+        self._new_callbacks = defaultdict(set)
+        # store the callbacks to be removed this frame
+        self._dead_callbacks = defaultdict(set)
         self.eventdq = deque()
+
 
     def subscribe(self, ev_class, callback):
         """ Register a callback for a particular event. """
         self._new_callbacks[ev_class].add(callback)
+
+    def unsubscribe(self, ev_class, callback):
+        """ Unregister a callback for an event """
+        self._dead_callbacks[ev_class].add(callback)
         
 
-
-    def join_new_listeners(self):
-        """ add new listener callbacks to the current callbacks """
+    def update_listeners(self):
+        """ Add new listener callbacks to the current callbacks,
+        and remove dead callbacks from the current callbacks.
+        """
+        if self._dead_callbacks:
+            for evClass in self._dead_callbacks:
+                self._callbacks[evClass] -= self._dead_callbacks[evClass]
+            self._dead_callbacks.clear()
+            
         if self._new_callbacks:
             for evClass in self._new_callbacks:
-                self._callbacks[evClass] = self._callbacks[evClass].union(self._new_callbacks[evClass])
-            self._new_callbacks.clear() 
-
+                self._callbacks[evClass] |= self._new_callbacks[evClass]
+            self._new_callbacks.clear()
+        
+    def clear(self):
+        """ Remove all listeners. """
+        self._callbacks.clear()
+        self._dead_callbacks.clear()
+        self._new_callbacks.clear()
+        self.eventdq.clear()
+         
    
     def publish(self, event):
         """ Publish an event.
@@ -116,24 +141,24 @@ class EventManager:
         """        
         
         if event.__class__ in [CTickEvent, MTickEvent, VTickEvent]:
-            self.join_new_listeners() #necessary for at least the very first tick
+            self.update_listeners() #necessary for at least the very first tick
             while self.eventdq:
                 ev = self.eventdq.popleft()
                 
-                self.join_new_listeners()
+                #self.update_listeners() # TODO: remove
                 for callback in self._callbacks[ev.__class__]: 
                     # Some of these listeners may enqueue events on the fly.
                     # Those new events will be treated within this while loop,
                     # they don't have to wait for the next tick event.
                     callback(ev)
                 
-                self.join_new_listeners()
+                self.update_listeners()
                 
             # finally, post tick event
             for cb in self._callbacks[event.__class__]:
                 cb(event)
                 
-            self.join_new_listeners()
+            self.update_listeners()
             
             
         else: # non-tick event
