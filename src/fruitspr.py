@@ -1,5 +1,5 @@
-from constants import FRUIT_COLORS, FONT_SIZE, CELLSIZE, FRUIT_SPEED, DIR_UP, \
-    DIR_DOWN, DIR_LEFT, DIR_RIGHT, STEPS_PER_CELL
+from board import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT
+from constants import FRUIT_COLORS, FONT_SIZE, CELLSIZE, STEPS_PER_CELL
 from pygame.font import Font
 from pygame.rect import Rect
 from pygame.sprite import DirtySprite
@@ -9,6 +9,12 @@ from pygame.transform import rotate
 
 class FruitSpr(DirtySprite):
     """ Representation on the screen of a fruit. """
+    
+    def __repr__(self):
+        return '%d at %s' % (self.fruit.fruit_num, str(self.rect))
+    def __str__(self):
+        return self.__repr__()
+    
     
     def __init__(self, fruit, interp_step):
         """ Prepare the fruit's spr: a square diamond 
@@ -43,11 +49,6 @@ class FruitSpr(DirtySprite):
         
         self.image = img
         
-    
-    def __repr__(self):
-        return '%d at %s' % (self.fruit.fruit_num, str(self.rect))
-    def __str__(self):
-        return self.__repr__()
         
     
     def resync(self, interp_step):

@@ -1,4 +1,4 @@
-from constants import DIR_MAP, CELLSIZE, TRAP_COLOR, PATH_COLOR, BG_COLOR, \
+from constants import CELLSIZE, TRAP_COLOR, PATH_COLOR, BG_COLOR, \
     BLENDER_COLOR
 from pygame.rect import Rect
 from pygame.sprite import Sprite
@@ -8,8 +8,8 @@ import logging
 class Cell(Sprite):
     """ TODO: split into gfx and model parts. """
     
-    def __init__(self, board, coords, pathdir, isentr=False, isjunc=False,
-                 iswait=False, iskill=False, istrap=False):
+    def __init__(self, board, coords, pathdir, iswalkable, isentr=False, 
+                 isjunc=False, iswait=False, iskill=False, istrap=False):
         """ coords are my coordinates.
         pathdir is the direction of the next cell in the path (e.g. DIR_UP).  
         """
@@ -20,7 +20,7 @@ class Cell(Sprite):
         self.prevcell = None # will remain None for the entrance
         self.loadcell = None # will remain None for non-loading cells
         self.fruit = None # will be set by the board or cells
-        self.iswalkable = pathdir in DIR_MAP # traps are walkable
+        self.iswalkable = iswalkable # traps are walkable
         self.istrap = istrap
         self.load_dir = None
         

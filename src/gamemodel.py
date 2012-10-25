@@ -1,16 +1,15 @@
 """ 
-Model: map name, board, scores, and recipes.
-View: score and recipe widgets on the right, board on the left.
+Model of the game. 
+Stores the map name, board, scores, and recipes. 
 """
+
 from board import Board
 from constants import MAPNAME, RECIPES, RECIPES_MADE_WIN_CONDITION, FRUIT_SPEED
-from events import RecipeMatchEvent, GameBuiltEvent, QuitEvent, MTickEvent, \
-    FruitSpeedEvent, AccelerateFruitsEvent, DecelerateFruitsEvent
-import logging
+from events import RecipeMatchEvent, GameBuiltEvent, MTickEvent, \
+    FruitSpeedEvent, AccelerateFruitsEvent, DecelerateFruitsEvent, GameWonEvent
 
 
-
-class Game:
+class GameModel:
     
     def __init__(self, em):
         """Create the board from the map. """
@@ -100,7 +99,7 @@ class Game:
                 self.score += score
                 self.recipes_made += 1
                 if self.recipes_made >= RECIPES_MADE_WIN_CONDITION:
-                    ev = QuitEvent()
+                    ev = GameWonEvent()
                 else:
                     ev = RecipeMatchEvent(recipe, self.score, score)
                 self._em.publish(ev)

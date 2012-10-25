@@ -7,14 +7,14 @@ from pygame.rect import Rect
 from pygame.sprite import LayeredDirty
 from pygame.surface import Surface
 from widgets import TextLabelWidget, RecipesWidget, CPUDisplayWidget
-import logging
 import pygame
 
 
 
-class PygameDisplay:
+class GameView:
     
     def __init__(self, em):
+        """ Score and recipe widgets on the right, game board on the left. """
 
         pygame.display.init() # OK to init multiple times
         pygame.font.init()
@@ -23,10 +23,10 @@ class PygameDisplay:
         
         window = pygame.display.set_mode(RESOLUTION)
         self.window = window
-        pygame.display.set_caption('Smoothie Factory')
+        pygame.display.set_caption('Smoothie Factory - In Play')
         
         # blit the bg screen: all black
-        bg = Surface(window.get_size()) 
+        bg = Surface(window.get_size())
         bg.fill((0, 0, 0))
         bg = bg.convert()
         self.window_bg = bg 
@@ -40,7 +40,6 @@ class PygameDisplay:
         # build GUI
         self.gui = self._build_gui() # return a sprite group
 
-        em.subscribe(VTickEvent, self.on_tick)
         em.subscribe(BoardBuiltEvent, self.on_board_built)
         em.subscribe(GameBuiltEvent, self.on_game_built)
         em.subscribe(FruitKilledEvent, self.on_fruit_killed)
@@ -98,7 +97,8 @@ class PygameDisplay:
         model_mvt_timer = 1000 / ev.fruit_speed 
         self.base_spr_timer = model_mvt_timer / STEPS_PER_CELL
         self.spr_timer = self.base_spr_timer
-               
+        
+        self._em.subscribe(VTickEvent, self.on_tick)
         
         
     def on_board_built(self, ev):

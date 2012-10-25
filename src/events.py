@@ -40,6 +40,8 @@ class RecipeMatchEvent(Event):
         self.current_score = current_score
         self.recipe_score = recipe_score
 
+class GameWonEvent(Event):
+    pass
 
 class TickEvent(Event):
     def __init__(self, loopmillis, workmillis):
@@ -92,6 +94,8 @@ class ToMenuEvent(Event):
     pass
 
 
+
+
 class EventManager:
     
     def __init__(self):
@@ -99,38 +103,28 @@ class EventManager:
         self._callbacks = defaultdict(set)
         # store the callbacks added during this frame
         self._new_callbacks = defaultdict(set)
-        # store the callbacks to be removed this frame
-        self._dead_callbacks = defaultdict(set)
+        
         self.eventdq = deque()
 
 
     def subscribe(self, ev_class, callback):
         """ Register a callback for a particular event. """
         self._new_callbacks[ev_class].add(callback)
-
-    def unsubscribe(self, ev_class, callback):
-        """ Unregister a callback for an event """
-        self._dead_callbacks[ev_class].add(callback)
         
 
     def update_listeners(self):
         """ Add new listener callbacks to the current callbacks,
         and remove dead callbacks from the current callbacks.
         """
-        if self._dead_callbacks:
-            for evClass in self._dead_callbacks:
-                self._callbacks[evClass] -= self._dead_callbacks[evClass]
-            self._dead_callbacks.clear()
-            
         if self._new_callbacks:
             for evClass in self._new_callbacks:
                 self._callbacks[evClass] |= self._new_callbacks[evClass]
             self._new_callbacks.clear()
         
+        
     def clear(self):
         """ Remove all listeners. """
         self._callbacks.clear()
-        self._dead_callbacks.clear()
         self._new_callbacks.clear()
         self.eventdq.clear()
          
@@ -145,7 +139,6 @@ class EventManager:
             while self.eventdq:
                 ev = self.eventdq.popleft()
                 
-                #self.update_listeners() # TODO: remove
                 for callback in self._callbacks[ev.__class__]: 
                     # Some of these listeners may enqueue events on the fly.
                     # Those new events will be treated within this while loop,

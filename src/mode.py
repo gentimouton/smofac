@@ -1,9 +1,13 @@
-from clock2 import Clock
+from clock import Clock
 from events import EventManager, QuitEvent
 
 
 class Mode:
-
+    """ 
+    A state in a mode state machine.
+    A mode is activated and deactivated by the mode state machine.
+    """
+    
     def __repr__(self):
         return self.__class__.__name__
     def __str__(self):
@@ -48,8 +52,11 @@ class Mode:
         self.clock = None 
         
         
-    def desactivate(self):
-        """ Tell the clock to stop. """
+    def deactivate(self):
+        """ Tell the clock to stop. 
+        The mode's components will be garbage collected
+        when the clock returns the hand back to the MSM. 
+        """
         self.clock.stop()
         
 
@@ -109,13 +116,13 @@ class ModeStateMachine:
         """ Callback when a mode transition event is fired by the current mode. 
         """
         new_mode = self.transitions[self.cur_mode][ev.__class__]
-        self.cur_mode.desactivate()
+        self.cur_mode.deactivate()
         self.cur_mode = new_mode # cur_mode is activated in the while loop above
         
         
     def on_quit(self,ev):
         """ Stop the current mode's clock. """
-        self.cur_mode.desactivate()
+        self.cur_mode.deactivate()
         self.cur_mode = None
         
         

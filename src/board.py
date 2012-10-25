@@ -1,59 +1,64 @@
 from cell import Cell
-from constants import DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT
 from events import BoardBuiltEvent, BoardUpdatedEvent, FruitKilledEvent, \
-    FruitSpawnedEvent, BoardPredictedEvent, FruitPlacedEvent
-from input import TriggerTrapEvent
+    FruitSpawnedEvent, BoardPredictedEvent, FruitPlacedEvent, TriggerTrapEvent
 from spawner import Spawner
 import logging
 import os
-import time
 
 
-        
+# direction constants
+DIR_UP = 'U'
+DIR_DOWN = 'D'
+DIR_LEFT = 'L'
+DIR_RIGHT = 'R'
+DIR_MAP = [DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT]
+
+
+
 class Board():
-    
+
     def __init__(self, game, em, mapname, waitzone_length):
         """ Build the board. """
-        
+
         self.mapname = mapname
         self.game = game
         self.phase = 'progress'
-        
+
         # build the map
         loaded_map = self.__load_mapfile(mapname)
         self.height, self.width, self._cellgrid = loaded_map[0:3]
-        self.E, self.J, self.W, self.K, self.T = loaded_map[3:8] 
+        self.E, self.J, self.W, self.K, self.T = loaded_map[3:8]
         load_cells_count = loaded_map[8] # number of cells in loading zone
         if load_cells_count < waitzone_length:
             logging.warn('Longest recipe has %d fruits,' % waitzone_length
-                         + ' but the map has only %d loading cells' 
+                         + ' but the map has only %d loading cells'
                          % load_cells_count)
         self.waitzone_length = waitzone_length
-        
+
         self.__build_path(waitzone_length)
-        
+
         self.fruits = set()
         self.fruits_to_spawn = set()
         self.fruits_to_kill = set()
         self.fruits_to_move = set()
-        
+
         # When it reaches zero or below, move the fruits.
         self.spawner = Spawner(em, self.E)
 
         self._em = em
         em.subscribe(TriggerTrapEvent, self.on_triggertrap)
         em.subscribe(FruitSpawnedEvent, self.on_fruit_spawned)
-        
+
         # notify that the board is built
         ev = BoardBuiltEvent(self.width, self.height, self)
         em.publish(ev)
-        
+
 
     def __str__(self):
         return self.__repr__()
     def __repr__(self):
         return '%s, %d x %d' % (self.filename, self.width, self.height)
-            
+
 
 
     def __load_mapfile(self, filename):
@@ -61,13 +66,13 @@ class Board():
         Also do some sanity checking on the way.
         This method is the only one concerned with the map file format.
         Each cell is stored as YZ in the map file, 
-        with Y being the type of cell (- for walkable, E for entrance),
+        with Y being the type of cell (- for iswalkable, E for entrance),
         and Z being the direction to go next in the path (U,D,L,R).
         """
-        
+
         # open file
         filepath = os.path.join(os.pardir, 'boards', filename)
-        try:    
+        try:
             f = open(filepath)
         except IOError:
             logging.error('Board %s not found at %s' % (filename, filepath))
@@ -83,7 +88,7 @@ class Board():
             if width <= 1:
                 logging.critical('Board %s has not enough cells.' % filename)
                 exit()
-        
+
         # build the cell matrix
         cellgrid = []
         entr_cell = junc_cell = wait_cell = None
@@ -95,23 +100,24 @@ class Board():
             for j in range(len(line)):
                 coords = j, i # _cellgrid[i][j] = i from top, j from left
                 waypoint, path_direction = line[j][0], line[j][1]
+                iswalkable = path_direction in DIR_MAP
                 if waypoint == 'E':
-                    cell = Cell(self, coords, path_direction, isentr=True)
+                    cell = Cell(self, coords, path_direction, iswalkable, isentr=True)
                     entr_cell = cell
                 elif waypoint == 'J':
-                    cell = Cell(self, coords, path_direction, isjunc=True)
+                    cell = Cell(self, coords, path_direction, iswalkable, isjunc=True)
                     junc_cell = cell
                 elif waypoint == 'W':
-                    cell = Cell(self, coords, path_direction, iswait=True)
+                    cell = Cell(self, coords, path_direction, iswalkable, iswait=True)
                     wait_cell = cell
                 elif waypoint == 'K':
-                    cell = Cell(self, coords, path_direction, iskill=True)
+                    cell = Cell(self, coords, path_direction, iswalkable, iskill=True)
                     kill_cell = cell
-                elif waypoint == 'T':
-                    cell = Cell(self, coords, path_direction, istrap=True)
+                elif waypoint == 'T': # traps are walkable
+                    cell = Cell(self, coords, path_direction, iswalkable, istrap=True)
                     trap_cell = cell
                 else:
-                    cell = Cell(self, coords, path_direction)
+                    cell = Cell(self, coords, path_direction, iswalkable)
                 # check if loading cell
                 if len(line[j]) > 2:
                     load_dir = line[j][2] # direction to move fruits to when recipe match
@@ -120,7 +126,7 @@ class Board():
                 tmprow.append(cell)
 
             cellgrid.append(tmprow)
-        
+
         # check there's at least one of each cell
         if not entr_cell or not junc_cell or not wait_cell\
             or not kill_cell or not trap_cell:
@@ -130,17 +136,17 @@ class Board():
         return (height, width, cellgrid,
                 entr_cell, junc_cell, wait_cell, kill_cell, trap_cell,
                 load_cells_count)
-        
 
-    
+
+
     def __build_path(self, waitzone_length):
         """ Build the path: link cells to each other.
         Shorten the exit path if it is longer in the map file 
         than the longest recipe for this level. 
         """
-        
+
         # entrance and loop areas
-        cell = self.E 
+        cell = self.E
         while not cell.nextcell: # ends when the loop is linked  
             nextcoords = self.get_coords_from_dir(cell.coords, cell.pathdir)
             nextcell = self.get_cell(nextcoords)
@@ -157,7 +163,7 @@ class Board():
         while i > 0 and load_dir: # stops when a cell has no 2nd path direction
             cell.set_waitingpath()
             loadcoords = self.get_coords_from_dir(cell.coords, load_dir)
-            loadcell = self.get_cell(loadcoords) 
+            loadcell = self.get_cell(loadcoords)
             cell.loadcell = loadcell # wire
             cell = cell.prevcell
             load_dir = cell.load_dir
@@ -171,12 +177,12 @@ class Board():
             # shorten the exit path 
             while load_dir:
                 loadcoords = self.get_coords_from_dir(cell.coords, load_dir)
-                loadcell = self.get_cell(loadcoords) 
+                loadcell = self.get_cell(loadcoords)
                 loadcell.set_nonwalkable()
                 cell = cell.prevcell
                 load_dir = cell.load_dir
-            
-         
+
+
         # build the path in the exit cells
         cell = first_cell_exit_path
         while cell != self.K:
@@ -189,19 +195,19 @@ class Board():
             # and keep going
             cell = nextcell
         self.K.set_exitpath() # K is also part of the exit path
-        
+
         # wire the trap
         trap = self.T
         target_coords = self.get_coords_from_dir(trap.coords, trap.pathdir)
         target_cell = self.get_cell(target_coords)
-        trap.set_target(target_cell)        
+        trap.set_target(target_cell)
 
-    
+
     def get_cell(self, lefttop, top=None):
         """ Get a cell from its coords.
         Accepts get_cell(left,top) or get_cell( (left,top) ).
         Returns None if out of map.        
-        """ 
+        """
         try:
             if top is not None: #top is specified ('is not None' because top can be 0)
                 left = lefttop
@@ -217,8 +223,8 @@ class Board():
                     return self._cellgrid[top][left]
         except IndexError: #outside of the map
             return None
-        
-        
+
+
     def get_coords_from_dir(self, coords, direction):
         """ If given coords = i,j, and direction = DIR_UP,
         then return i, j-1
@@ -237,14 +243,14 @@ class Board():
                              % (str(coords), self.mapname))
             exit()
         return c
-    
-            
-            
+
+
+
     def progress_fruits(self):
         """ Actually move the fruits on the board. Aka movement tick.
         The loading cells are taken care of during the prediction tick. 
         """
-        
+
         # kill fruits as soon as they land on the blender cell
         kcell = self.K
         kfruit = kcell.fruit
@@ -255,7 +261,7 @@ class Board():
             ev = FruitKilledEvent(kfruit)
             self._em.publish(ev)
             logging.debug('removed fruit: %s' % kfruit)
-        
+
         # exit cells
         cell = kcell.prevcell
         while cell != None: # stops at X.prevcell, which is None
@@ -273,7 +279,7 @@ class Board():
             elif wfruit.is_looping: # prediction tick says wfruit should loop
                 stashed_fruit = wfruit
                 wcell.empty()
-            
+
         # looping cells
         cell = wcell.prevcell
         while cell != wcell:
@@ -282,32 +288,32 @@ class Board():
                 # fruits are set to wait by the prediction tick
                 cell.move_fruit()
             cell = cell.prevcell
-        
+
         # now we can put the stashed fruit (if any) back in the loop
         if stashed_fruit:
             cell = wcell.nextcell
             cell.set_fruit(stashed_fruit)
-          
+
         # entrance cells
         cell = self.J
         while cell != self.E.prevcell: # E.prevcell is None
             cell.move_fruit()
             cell = cell.prevcell
-        
+
         self.phase = 'progress'
         ev = BoardUpdatedEvent()
         self._em.publish(ev)
 
-        
-        
+
+
     def predict_fruits(self):
         """ Predict the next cell each fruit is going to be in. 
         Aka prediction tick.
         """
-        
+
         # nothing to do for the blender cell: 
         # the fruit has been killed at movement tick
-          
+
         # exit cells
         cell = self.K.prevcell
         while cell != None: # stops at X.prevcell, which is None
@@ -326,7 +332,7 @@ class Board():
         cell = wcell
         # all fruits until the hole must wait; 
         # fruits after the hole must loop
-        
+
         if should_wait:# beginning of a match 
             seen_hole = False
             while i > 0:
@@ -342,7 +348,7 @@ class Board():
                         seen_hole = True
                 cell = cell.prevcell
                 i -= 1
-            
+
         else:
             j = num_fruits_to_kill
             while i > 0:
@@ -358,7 +364,7 @@ class Board():
                         cell.predict_fruit_move()
                 cell = cell.prevcell
                 i -= 1
-        
+
         # at this line, cell is the first non-waiting looping cell
         while cell != wcell: # process all the non-waiting looping cells
             fruit = cell.fruit
@@ -366,7 +372,7 @@ class Board():
                 # and leaving fruits have been taken care of above
                 cell.predict_fruit_move()
             cell = cell.prevcell
-        
+
         # entrance cells
         jcell = self.J
         jfruit = jcell.fruit
@@ -376,20 +382,20 @@ class Board():
             else:
                 jfruit.loop()
                 jcell.predict_fruit_move()
-        
+
         cell = jcell.prevcell
         while cell != self.E.prevcell: # E.prevcell is None
             fruit = cell.fruit
             if fruit:
                 next_fruit = cell.nextcell.fruit
-                if next_fruit and next_fruit.is_waiting: 
+                if next_fruit and next_fruit.is_waiting:
                     # fruit waiting ahead: wait
                     fruit.wait()
                 else:# no waiting fruit ahead: can loop
                     fruit.loop()
                     cell.predict_fruit_move()
             cell = cell.prevcell
-        
+
         self.phase = 'predict'
         ev = BoardPredictedEvent()
         self._em.publish(ev)
@@ -408,11 +414,11 @@ class Board():
 
     def on_fruit_spawned(self, ev):
         """ When a fruit is spawned, add it to the list. """
-        
+
         entrance = self.E
         if entrance.fruit: # should spawn new fruit, but can't: game over!
             logging.info('game over') # TODO: QuitEvent
-        
+
         else: # if there's room
             fruit = ev.fruit
             fruit.cell = entrance
@@ -427,12 +433,12 @@ class Board():
             self.fruits.add(fruit)
             ev = FruitPlacedEvent(fruit)
             self._em.publish(ev)
-            
-                
-        
+
+
+
     def on_triggertrap(self, ev):
         """ User pushed the trap key. Try to trap a fruit. """
         is_predict_phase = self.phase == 'predict'
         self.T.do_trap(is_predict_phase)
-        
-        
+
+

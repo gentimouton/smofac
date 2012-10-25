@@ -2,21 +2,14 @@
 # TODO: make a config file
 
 # mechanics config
-SPAWN_PERIOD = 2 # spawn a fruit every how many seconds?
-FRUIT_SPEED = 4 # in cells per second
+SPAWN_PERIOD = 1 # spawn a fruit every how many seconds?
+FRUIT_SPEED = 6 # in cells per second
 # thus there is a fruit spawned every SPAWN_PERIOD * FRUIT_SPEED cells
 # careful: if FRUIT_SPEED < 1/SPAWN_PERIOD, the 2nd fruit causes game over 
 
-RNGSEED = 66
+RNGSEED = 1
 MAPNAME = 'medium.txt'
-RECIPES_MADE_WIN_CONDITION = 8 # how many recipes to make to win 
-
-# map constants
-DIR_UP = 'U'
-DIR_DOWN = 'D'
-DIR_LEFT = 'L'
-DIR_RIGHT = 'R'
-DIR_MAP = [DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT]
+RECIPES_MADE_WIN_CONDITION = 4 # how many recipes to make to win 
 
 # fruits 
 # TODO: replace with constants rather than string slugs?
@@ -70,7 +63,7 @@ BLENDER_COLOR = (155, 155, 155)
 
 
 # frame rate, per second
-FPS = 30
+FPS = 60
 
 # How many positions a fruit can take in one cell.
 # If even number, the first interpolation step will be right between 2 cells.
