@@ -4,9 +4,10 @@ Stores the map name, board, scores, and recipes.
 """
 
 from board import Board
-from constants import MAPNAME, RECIPES, RECIPES_MADE_WIN_CONDITION, FRUIT_SPEED
-from events import RecipeMatchEvent, GameBuiltEvent, MTickEvent, \
-    FruitSpeedEvent, AccelerateFruitsEvent, DecelerateFruitsEvent, GameWonEvent
+from config import fruit_speed, map_name, num_recipes_to_win
+from constants import RECIPES
+from events import RecipeMatchEvent, GameBuiltEvent, MTickEvent, FruitSpeedEvent, \
+    AccelerateFruitsEvent, DecelerateFruitsEvent, GameWonEvent
 
 
 class GameModel:
@@ -16,7 +17,7 @@ class GameModel:
         
         self.score = 0
         self.recipes_made = 0
-        self.mapname = MAPNAME 
+        self.mapname = map_name 
         
         
         # build the recipe tree = dict of dict of ... of dict, 
@@ -43,7 +44,7 @@ class GameModel:
         # create the board
         self.board = Board(self, em, self.mapname, longest_recipe_length)
         
-        self.fruit_speed = FRUIT_SPEED # in cells per second
+        self.fruit_speed = fruit_speed # in cells per second
         # 1 tick for anticipating and setting movement direction, 
         # and another for actually moving fruits
         self.base_fruit_timer = 1000. / self.fruit_speed / 2 
@@ -98,7 +99,7 @@ class GameModel:
                 # update the score, and process the fruits
                 self.score += score
                 self.recipes_made += 1
-                if self.recipes_made >= RECIPES_MADE_WIN_CONDITION:
+                if self.recipes_made >= num_recipes_to_win:
                     ev = GameWonEvent()
                 else:
                     ev = RecipeMatchEvent(recipe, self.score, score)

@@ -1,4 +1,10 @@
 #! /usr/bin/env python3.2
+
+# configure the logger before anything else happens
+import logging.config
+logging.config.fileConfig('logging.conf')    
+
+# then import game stuffs
 from events import ToGameEvent, ToMenuEvent, TriggerTrapEvent, \
     AccelerateFruitsEvent, DecelerateFruitsEvent, QuitEvent, ValidateEvent, \
     MoveUpEvent, MoveDownEvent, MoveLeftEvent, MoveRightEvent, GameWonEvent
@@ -9,7 +15,7 @@ from menuview import MenuView
 from mode import ModeStateMachine, Mode
 from pygame.locals import K_ESCAPE, K_SPACE, K_EQUALS, K_PLUS, K_MINUS, \
     K_UNDERSCORE, K_RETURN, K_UP, K_DOWN, K_LEFT, K_RIGHT
-import logging
+
 
 
 ###################################################
@@ -50,8 +56,11 @@ class MainMenuMode(Mode):
 #####################################################
 
 def main():
-    logging.basicConfig(level=logging.INFO)
     
+    # The smofac logger is configured when the config module is imported.
+    log = logging.getLogger('smofac')
+    log.info('Smofac started')
+        
     mm_mode = MainMenuMode()
     g_mode = GameMode()
 

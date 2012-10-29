@@ -1,4 +1,4 @@
-from constants import FPS
+from config import fps
 from events import CTickEvent, MTickEvent, VTickEvent
 from time import time, sleep
 
@@ -6,7 +6,7 @@ from time import time, sleep
 class Clock():
 
     def __init__(self, em):
-        self.fps = FPS
+        self.fps = fps
         self._em = em
         self.elapsed_frames = 0
 

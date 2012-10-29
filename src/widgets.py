@@ -1,6 +1,7 @@
-from constants import FONT_SIZE, FRUIT_COLORS
-from events import MoveUpEvent, MoveDownEvent, MoveRightEvent, \
-    MoveLeftEvent, ValidateEvent, VTickEvent
+from config import font_size
+from constants import FRUIT_COLORS
+from events import MoveUpEvent, MoveDownEvent, MoveRightEvent, MoveLeftEvent, \
+    ValidateEvent, VTickEvent
 from pygame.font import Font
 from pygame.locals import RLEACCEL, SRCALPHA
 from pygame.rect import Rect
@@ -44,7 +45,6 @@ class TextLabelWidget(Widget):
             self._em.subscribe(evtClass, self.on_textevent)
         
         # gfx
-        font_size = FONT_SIZE
         self.font = Font(None, font_size)
         if rect:
             self.rect = rect
@@ -241,7 +241,6 @@ class CPUDisplayWidget(Widget):
         self.display_timer = 1000 / CPU_DISPLAY_FREQ # in millis
         
         # gfx
-        font_size = FONT_SIZE
         self.font = Font(None, font_size)
         if rect:
             self.rect = rect
@@ -329,7 +328,6 @@ class RecipesWidget(Widget):
         ord_recipes.sort(key=lambda pair: (len(pair[0]), pair[1], pair[0][0]))
 
         # gfx
-        font_size = FONT_SIZE
         self.font = Font(None, font_size)
         if rect:
             self.rect = rect

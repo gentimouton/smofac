@@ -1,4 +1,4 @@
-from constants import RESOLUTION, BG_COLOR, FONT_SIZE, STEPS_PER_CELL
+from config import bg_color, resolution, font_size, steps_per_cell
 from events import BoardBuiltEvent, BoardUpdatedEvent, RecipeMatchEvent, \
     GameBuiltEvent, VTickEvent, FruitKilledEvent, FruitSpeedEvent, FruitPlacedEvent, \
     QuitEvent
@@ -8,7 +8,6 @@ from pygame.sprite import LayeredDirty
 from pygame.surface import Surface
 from widgets import TextLabelWidget, RecipesWidget, CPUDisplayWidget
 import pygame
-
 
 
 class GameView:
@@ -21,7 +20,7 @@ class GameView:
         
         self._em = em
         
-        window = pygame.display.set_mode(RESOLUTION)
+        window = pygame.display.set_mode(resolution)
         self.window = window
         pygame.display.set_caption('Smoothie Factory - In Play')
         
@@ -54,7 +53,7 @@ class GameView:
         
         # score at top-right of the window
         rec = Rect(600 + 10, 0,
-                   100, FONT_SIZE * 1.5)
+                   100, font_size * 1.5)
         evt_txt_dict = {RecipeMatchEvent: 'current_score'}
         score_widget = TextLabelWidget(self._em, '0',
                                        events_attrs=evt_txt_dict,
@@ -64,8 +63,8 @@ class GameView:
         gui.add(score_widget)
         
         # CPU at bottom-right of the window
-        rec = Rect(600 + 10, 600 - FONT_SIZE * 1.5,
-                   100, FONT_SIZE * 1.5)
+        rec = Rect(600 + 10, 600 - font_size * 1.5,
+                   100, font_size * 1.5)
         cpu_widget = CPUDisplayWidget(self._em, '0',
                                       rect=rec,
                                       txtcolor=(0, 0, 0),
@@ -83,7 +82,7 @@ class GameView:
         
         # recipe widget
         evt_recipe_dict = {RecipeMatchEvent: 'recipe'}
-        rec = Rect(600, FONT_SIZE * 1.5, 150, 400)
+        rec = Rect(600, font_size * 1.5, 150, 400)
         # ev.recipes maps tuples of fruit type to score
         rwid = RecipesWidget(self._em,
                              ev.recipes,
@@ -95,7 +94,7 @@ class GameView:
         
         # spr movement timer
         model_mvt_timer = 1000 / ev.fruit_speed 
-        self.base_spr_timer = model_mvt_timer / STEPS_PER_CELL
+        self.base_spr_timer = model_mvt_timer / steps_per_cell
         self.spr_timer = self.base_spr_timer
         
         self._em.subscribe(VTickEvent, self.on_tick)
@@ -110,7 +109,7 @@ class GameView:
         win_height = self.window.get_height()
         bg = Surface((win_height, win_height))
         bg = bg.convert()
-        bg.fill(BG_COLOR)
+        bg.fill(bg_color)
         
         for left in range(width):
             for top in range(height):
@@ -163,7 +162,7 @@ class GameView:
             self.interp_steps += 1
             # interpolate 3 positions, 
             # but the last one is done when board is updated (so only 2)
-            if self.interp_steps < STEPS_PER_CELL:
+            if self.interp_steps < steps_per_cell:
                 for fruit in self.fruit_sprites:
                     fruit.resync(self.interp_steps)
             
@@ -190,7 +189,7 @@ class GameView:
     def on_speed_change(self, ev):
         """ When the fruit speed changes, update the speed of fruit sprites. """
         model_mvt_timer = 1000 / ev.speed 
-        self.base_spr_timer = model_mvt_timer / STEPS_PER_CELL
+        self.base_spr_timer = model_mvt_timer / steps_per_cell
         
     
     def on_quit(self, ev):

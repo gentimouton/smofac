@@ -1,4 +1,4 @@
-from constants import RESOLUTION
+from config import resolution
 from events import QuitEvent, VTickEvent
 from pygame.sprite import LayeredDirty
 from pygame.surface import Surface
@@ -17,7 +17,7 @@ class MenuView:
 
         self._em = em
 
-        window = pygame.display.set_mode(RESOLUTION)
+        window = pygame.display.set_mode(resolution)
         self.window = window
         pygame.display.set_caption('Smoothie Factory - %s' % self.pagename)
 

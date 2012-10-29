@@ -1,5 +1,4 @@
-from constants import CELLSIZE, TRAP_COLOR, PATH_COLOR, BG_COLOR, \
-    BLENDER_COLOR
+from config import trap_color, path_color, bg_color, blender_color, cell_size
 from pygame.rect import Rect
 from pygame.sprite import Sprite
 from pygame.surface import Surface
@@ -7,8 +6,8 @@ import logging
 
 class Cell(Sprite):
     """ TODO: split into gfx and model parts. """
-    
-    def __init__(self, board, coords, pathdir, iswalkable, isentr=False, 
+
+    def __init__(self, board, coords, pathdir, iswalkable, isentr=False,
                  isjunc=False, iswait=False, iskill=False, istrap=False):
         """ coords are my coordinates.
         pathdir is the direction of the next cell in the path (e.g. DIR_UP).  
@@ -23,20 +22,20 @@ class Cell(Sprite):
         self.iswalkable = iswalkable # traps are walkable
         self.istrap = istrap
         self.load_dir = None
-        
+
         #gfx
-        cspr_left = left * CELLSIZE
-        cspr_top = top * CELLSIZE
-        self.rect = Rect(cspr_left, cspr_top, CELLSIZE, CELLSIZE)
-        img = Surface((CELLSIZE, CELLSIZE))
-        
+        cspr_left = left * cell_size
+        cspr_top = top * cell_size
+        self.rect = Rect(cspr_left, cspr_top, cell_size, cell_size)
+        img = Surface((cell_size, cell_size))
+
         if istrap:
-            img.fill(TRAP_COLOR)
+            img.fill(trap_color)
         elif self.iswalkable: # but not a trap
-            img.fill(PATH_COLOR)
+            img.fill(path_color)
         else:
-            img.fill(BG_COLOR)
-            
+            img.fill(bg_color)
+
         self.image = img
 
 
@@ -48,37 +47,37 @@ class Cell(Sprite):
         else:
             fruitdata = 'NOFRUIT'
         return '%s' % (str(self.coords)) + fruitdata
-    
-            
+
+
     @property
     def direction(self):
         """ Return the direction where the next cell is. """
         return self.pathdir
-    
+
     def set_exitpath(self):
         """ The board found out that I am on the exit path. 
         Change my color. """
-        self.image.fill(BLENDER_COLOR) 
-        
+        self.image.fill(blender_color)
+
     def set_waitingpath(self):
         """ The board found out I'm a cell in the waiting area. 
         Change my color. """
-        self.image.fill(BLENDER_COLOR)
-    
+        self.image.fill(blender_color)
+
     def set_nonwalkable(self):
         """ The board found out there are more cells in the exit path
         than the longest recipe: some cells (like me) need to be removed """
         self.iswalkable = False
-        self.image.fill(BG_COLOR)      
-        
-        
+        self.image.fill(bg_color)
+
+
     #################### fruit stuff
-      
+
     def empty(self):
         """ Remove my fruit """
         self.fruit = None
-        
-        
+
+
     def set_fruit(self, fruit):
         """ Add a fruit to my cell. Called during movement tick. """
         if self.fruit:
@@ -90,7 +89,7 @@ class Cell(Sprite):
         fruit.nextcell = None # tell to the view that we're in movement phase
         self.fruit = fruit
 
-    
+
     def move_fruit(self):
         """ Actually move a fruit. """
         myfruit = self.fruit
@@ -103,7 +102,7 @@ class Cell(Sprite):
             myfruit.prevcell = self
             tcell.fruit = myfruit
             self.fruit = None
-        
+
     def predict_fruit_move(self, cell=None):
         """ Predict the next cell of my fruit. 
         If a cell is specified, predict to that cell instead. 
@@ -112,8 +111,8 @@ class Cell(Sprite):
         if myfruit:
             tcell = cell or self.nextcell
             myfruit.nextcell = tcell # indicates we're in prediction phase to the view
-            
-            
+
+
     def exit_fruit(self):
         """ Move a fruit to my exit cell. """
         if not self.loadcell:
@@ -139,25 +138,25 @@ class Cell(Sprite):
                               + ' the exit of fruit %s' % myfruit\
                               + ' but it is not linked to a loading cell.')
             myfruit.nextcell = self.loadcell
-        
-    
+
+
     ################# trap stuff
-    
-        
+
+
     def set_target(self, targetcell):
         """ Called when the board wires the path. 
         When the cell is a trap, 
         its target is the cell it is stealing from. """
         self.target = targetcell
-        
-        
+
+
     def do_trap(self, is_predict_phase):
         """ Try to catch/release/swap a fruit from/to/with the target cell.
         """
         myfruit = self.fruit
         tcell = self.target
         tfruit = tcell.fruit
-        
+
         if myfruit:
             if tfruit: # swap
                 # my fruit
@@ -175,7 +174,7 @@ class Cell(Sprite):
                 tfruit.cell = self
                 tfruit.wait()
                 self.fruit = tfruit
-                
+
 
             else: # release
                 myfruit.prevcell = tcell.prevcell
@@ -187,8 +186,8 @@ class Cell(Sprite):
                 myfruit.loop()
                 tcell.fruit = myfruit
                 self.fruit = None
-                
-                
+
+
         else: # I have no fruit
             if tfruit: # catch
                 tfruit.nextcell = None

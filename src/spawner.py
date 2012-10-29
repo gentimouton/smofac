@@ -1,4 +1,5 @@
-from constants import SPAWN_PERIOD, RNGSEED, FRUIT_LIST
+from config import spawn_period, rng_seed
+from constants import FRUIT_LIST
 from events import FruitSpawnedEvent, CTickEvent
 from fruit import Fruit
 import logging
@@ -7,7 +8,7 @@ import random
 class Spawner():
     def __init__(self, em, cell):
         self.rng = random.Random()
-        self.rng.seed(RNGSEED) # determinism = easier to debug
+        self.rng.seed(rng_seed) # determinism = easier to debug
         self.spawn_timer = 0 # start spawning right away 
         self.fruits_spawned = 0 # ++ when a fruit appears
         self.cell = cell 
@@ -24,7 +25,7 @@ class Spawner():
             random_int = self.rng.randint(0, len(FRUIT_LIST) - 1)
             fruit_type = FRUIT_LIST[random_int]
             fruit = Fruit(fruit_type, self.fruits_spawned)
-            self.spawn_timer = SPAWN_PERIOD * 1000
+            self.spawn_timer = spawn_period * 1000
             self.fruits_spawned += 1
             logging.debug('spawned Fruit %s' % fruit)
             ev = FruitSpawnedEvent(fruit)
