@@ -32,9 +32,9 @@ xyx = {('S', 'K', 'S'):10,
        }
 
 RECIPES = {}
-#RECIPES.update(doubles)
-RECIPES.update(triples)
-RECIPES.update(quads)
+RECIPES.update(doubles)
+#RECIPES.update(triples)
+#RECIPES.update(quads)
 
 
 # graphics config

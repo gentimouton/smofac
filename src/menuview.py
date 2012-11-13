@@ -12,8 +12,13 @@ class MenuView:
     # default view menu: a single quit button
     evtlabels = [('default quit', QuitEvent)
                  ]
+    
+    pagename = '' # to be displayed at the top of the window 
 
-    def __init__(self, em):
+    def __init__(self, em, ev):
+        """ em is the mode's event manager,
+        ev is an event containing data from the previous mode. 
+        """
 
         self._em = em
 

@@ -5,7 +5,7 @@ class Event:
         return self.__class__.__name__
     def __str__(self):
         return self.__repr__()
-    
+
 
 class BoardBuiltEvent(Event):
     def __init__(self, width, height, board):
@@ -17,7 +17,7 @@ class GameBuiltEvent(Event):
     def __init__(self, recipes, fruit_speed):
         self.recipes = recipes
         self.fruit_speed = fruit_speed
-        
+
 class BoardUpdatedEvent(Event):
     pass
 class BoardPredictedEvent(Event):
@@ -29,11 +29,11 @@ class FruitSpawnedEvent(Event):
 class FruitPlacedEvent(Event):
     def __init__(self, fruit):
         self.fruit = fruit
-        
+
 class FruitKilledEvent(Event):
     def __init__(self, fruit):
         self.fruit = fruit
-              
+
 class RecipeMatchEvent(Event):
     def __init__(self, recipe, current_score, recipe_score):
         self.recipe = recipe
@@ -41,7 +41,9 @@ class RecipeMatchEvent(Event):
         self.recipe_score = recipe_score
 
 class GameWonEvent(Event):
-    pass
+    def __init__(self, levelnum, score):
+        self.score = score
+        self.levelnum = levelnum
 
 class TickEvent(Event):
     def __init__(self, loopmillis, workmillis):
@@ -59,7 +61,7 @@ class QuitEvent(Event):
     pass # player wants to exit the game
 
 
-class TriggerTrapEvent(Event): 
+class TriggerTrapEvent(Event):
     pass # player pushed the trap key
 
 
@@ -88,8 +90,14 @@ class DecelerateFruitsEvent(Event):
 
 
 # mode switching events
-class ToGameEvent(Event):
-    pass
+class StartGameEvent(Event):
+    # from the "next level" option in the level transition mode to the game mode 
+    def __init__(self, levelnum):
+        self.levelnum = levelnum
+class StartNewGameEvent(Event):
+    # from the "New Game" option in the menu mode to the game mode 
+    levelnum = 1 # first level
+
 class ToMenuEvent(Event):
     pass
 
@@ -97,20 +105,20 @@ class ToMenuEvent(Event):
 
 
 class EventManager:
-    
+
     def __init__(self):
         # map events to their callbacks
         self._callbacks = defaultdict(set)
         # store the callbacks added during this frame
         self._new_callbacks = defaultdict(set)
-        
+
         self.eventdq = deque()
 
 
     def subscribe(self, ev_class, callback):
         """ Register a callback for a particular event. """
         self._new_callbacks[ev_class].add(callback)
-        
+
 
     def update_listeners(self):
         """ Add new listener callbacks to the current callbacks,
@@ -120,40 +128,40 @@ class EventManager:
             for evClass in self._new_callbacks:
                 self._callbacks[evClass] |= self._new_callbacks[evClass]
             self._new_callbacks.clear()
-        
-        
+
+
     def clear(self):
         """ Remove all listeners. """
         self._callbacks.clear()
         self._new_callbacks.clear()
         self.eventdq.clear()
-         
-   
+
+
     def publish(self, event):
         """ Publish an event.
         New subscriber callbacks are added when tick events are processed.    
-        """        
-        
+        """
+
         if event.__class__ in [CTickEvent, MTickEvent, VTickEvent]:
             self.update_listeners() #necessary for at least the very first tick
             while self.eventdq:
                 ev = self.eventdq.popleft()
-                
-                for callback in self._callbacks[ev.__class__]: 
+
+                for callback in self._callbacks[ev.__class__]:
                     # Some of these listeners may enqueue events on the fly.
                     # Those new events will be treated within this while loop,
                     # they don't have to wait for the next tick event.
                     callback(ev)
-                
+
                 self.update_listeners()
-                
+
             # finally, post tick event
             for cb in self._callbacks[event.__class__]:
                 cb(event)
-                
+
             self.update_listeners()
-            
-            
+
+
         else: # non-tick event
             self.eventdq.append(event)
-            
+

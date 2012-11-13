@@ -14,7 +14,10 @@ class InputController:
     input_map = {} # map keys to events; 
     #to be overriden by concrete input controllers
 
-    def __init__(self, em):
+    def __init__(self, em, ev):
+        """ em is the mode's event manager,
+        ev is an event containing data from the previous mode. 
+        """
         # no need to pygame.init(): events dont need any module  
         self._em = em
         self._em.subscribe(CTickEvent, self.on_tick)
