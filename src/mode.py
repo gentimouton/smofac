@@ -98,15 +98,14 @@ class ModeStateMachine:
         return self.__repr__()
 
 
-
-    def __init__(self, init_mode, transitions):
+    def __init__(self, transitions, init_mode, init_evt):
         """ transitions is a dict mapping a mode instance
         to a dict(event class, mode instance).
         The keys of transitions are the mode states.
         """
 
         self.cur_mode = init_mode
-        self.cur_mode_evt = None # event to pass as argument to the current mode
+        self.cur_mode_evt = init_evt # event to pass to the current mode
         self.modes = list(transitions.keys())
         self.transitions = transitions
 
@@ -116,14 +115,7 @@ class ModeStateMachine:
             self.cur_mode.set_transition_callback(evt_classes, self.on_transition)
             self.cur_mode.set_quit_callback(self.on_quit)
 
-            self.cur_mode.activate(self.cur_mode_evt) # returns when the mode's clock stops
-
-        # the current mode is changed when transition events are fired
-        # if the current mode is None, the program exits
-        #while self.cur_mode:
-        #    self.cur_mode.set_quit_callback(self.on_quit)
-        #    self.cur_mode.activate() # returns when the mode's clock stops
-
+            self.cur_mode.activate(self.cur_mode_evt) # return when mode's clock stops
 
 
     def on_transition(self, ev):

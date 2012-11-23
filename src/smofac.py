@@ -94,8 +94,10 @@ def main():
                    g_mode: {ToMenuEvent: mm_mode, GameWonEvent: lt_mode},
                    lt_mode: {StartGameEvent: g_mode, ToMenuEvent: mm_mode}
                    }
-
-    msm = ModeStateMachine(mm_mode, transitions)
+    
+    init_evt = StartNewGameEvent()
+    
+    msm = ModeStateMachine(transitions, g_mode, init_evt)
 
 
 if __name__ == "__main__":
