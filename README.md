@@ -16,6 +16,14 @@ GPL
 
 
 
+Install
+====
+
+- python 3
+- python3-yaml
+- pygame
+
+
 
 Phases
 =====

@@ -64,13 +64,15 @@ class LevelTransitionView(MenuView):
     def __init__(self, em, ev):
         """ if just completed level 2, only propose to go to main menu """
 
-        lvlnum = ev.levelnum # number of the level just completed
-        self.pagename = 'level %d completed' % lvlnum # window-bar title
+        lvlname = ev.lvlname # number of the level just completed
+        self.pagename = 'level %s completed' % lvlname # window-bar title
 
         self.evtlabels = [('to main menu', ToMenuEvent)]
-        if lvlnum <= 1: # there is a next level
-            self.evtlabels.insert(0, ('next game', StartGameEvent, [lvlnum + 1]))
-            
+        if lvlname != 'lvl2': # there is a next level
+            lvlnum = int(lvlname[-1])
+            self.evtlabels.insert(0, ('next game', StartGameEvent,
+                                      ['lvl%d' % (lvlnum + 1)]))
+
         MenuView.__init__(self, em, ev)
 
 
@@ -94,9 +96,9 @@ def main():
                    g_mode: {ToMenuEvent: mm_mode, GameWonEvent: lt_mode},
                    lt_mode: {StartGameEvent: g_mode, ToMenuEvent: mm_mode}
                    }
-    
+
     init_evt = StartNewGameEvent()
-    
+
     msm = ModeStateMachine(transitions, g_mode, init_evt)
 
 

@@ -47,13 +47,4 @@ path_color = int_tuple(_dic['path_color'])
 blender_color = int_tuple(_dic['blender_color'])
 
 
-# mechanics
-rng_seed = int(_dic['rng_seed'])
-map_name = _dic['map_name']
-num_recipes_to_win = int(_dic['num_recipes_to_win'])
-
-spawn_period = float(_dic['spawn_period'])
-fruit_speed = float(_dic['fruit_speed'])
-
-
 _logger.info('Loaded config')

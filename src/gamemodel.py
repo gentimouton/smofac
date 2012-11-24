@@ -2,13 +2,15 @@
 Model of the game. 
 Stores the map name, board, scores, and recipes. 
 """
-
 from board import Board
-from config import fruit_speed, map_name, num_recipes_to_win
-from constants import RECIPES
 from events import RecipeMatchEvent, GameBuiltEvent, MTickEvent, FruitSpeedEvent, \
     AccelerateFruitsEvent, DecelerateFruitsEvent, GameWonEvent
+import yaml
+import logging
+import os
 
+
+_logger = logging.getLogger('smofac')
 
 class GameModel:
 
@@ -21,11 +23,18 @@ class GameModel:
 
         self.score = 0
         self.recipes_made = 0
-        self.levelnum = levelnum = ev.levelnum
-        if levelnum == 1: # first level
-            self.mapname = 'small.txt'
-        elif levelnum == 2:
-            self.mapname = 'medium.txt'
+        self.lvlname = ev.lvlname
+        cfg = self.__load_level_config(self.lvlname)
+
+        self.mapname = cfg['map_name']
+        self.num_recipes_to_win = cfg['num_recipes_to_win']
+        spawn_period = cfg['spawn_period']
+        fruit_speed = cfg['fruit_speed']
+        rng_seed = cfg['rng_seed']
+        recipes = cfg['recipes']
+        # TODO: replace with constants rather than string slugs?
+        # NO FRUIT CAN BE NAMED 'score'!
+        fruit_names = ['s', 'k', 'b', 'j'] # TODO: should come from config file
 
         # build the recipe tree = dict of dict of ... of dict, 
         # depth = length of the longest recipe 
@@ -34,7 +43,7 @@ class GameModel:
         lowest_recipe_score = 0 # arbitrary value to start with
         # it can be that some recipes have a negative value!
 
-        for recipe, score in RECIPES.items():
+        for recipe, score in recipes.items():
             longest_recipe_length = max(longest_recipe_length, len(recipe))
             lowest_recipe_score = min(lowest_recipe_score, score)
 
@@ -49,7 +58,8 @@ class GameModel:
         self.lowest_recipe_score = lowest_recipe_score
 
         # create the board
-        self.board = Board(self, em, self.mapname, longest_recipe_length)
+        self.board = Board(self, em, self.mapname, longest_recipe_length,
+                           fruit_names, rng_seed, spawn_period)
 
         self.fruit_speed = fruit_speed # in cells per second
         # 1 tick for anticipating and setting movement direction, 
@@ -63,8 +73,20 @@ class GameModel:
         em.subscribe(AccelerateFruitsEvent, self.on_faster_fruits)
         em.subscribe(DecelerateFruitsEvent, self.on_slower_fruits)
 
-        # RECIPES = dict: tuples of fruit type -> score
-        em.publish(GameBuiltEvent(RECIPES, self.fruit_speed))
+        # recipes = dict: tuples of fruit type -> score
+        em.publish(GameBuiltEvent(recipes, self.fruit_speed))
+
+
+    def __load_level_config(self, levelname):
+        """ Fetch the recipes, random seed, map name, etc. 
+        for the specified level 
+        """
+        filename = levelname + ".yaml"
+        fp = os.path.join(os.pardir, 'levels', filename)
+        stream = open(fp, 'r')
+        config = yaml.load(stream)
+        _logger.debug('Loaded config')
+        return config
 
 
     def recipe_match(self, fruit_list):
@@ -106,8 +128,8 @@ class GameModel:
                 # update the score, and process the fruits
                 self.score += score
                 self.recipes_made += 1
-                if self.recipes_made >= num_recipes_to_win:
-                    ev = GameWonEvent(self.levelnum, self.score)
+                if self.recipes_made >= self.num_recipes_to_win:
+                    ev = GameWonEvent(self.lvlname, self.score)
                 else:
                     ev = RecipeMatchEvent(recipe, self.score, score)
                 self._em.publish(ev)

@@ -41,9 +41,9 @@ class RecipeMatchEvent(Event):
         self.recipe_score = recipe_score
 
 class GameWonEvent(Event):
-    def __init__(self, levelnum, score):
+    def __init__(self, lvlname, score):
         self.score = score
-        self.levelnum = levelnum
+        self.lvlname = lvlname
 
 class TickEvent(Event):
     def __init__(self, loopmillis, workmillis):
@@ -92,11 +92,11 @@ class DecelerateFruitsEvent(Event):
 # mode switching events
 class StartGameEvent(Event):
     # from the "next level" option in the level transition mode to the game mode 
-    def __init__(self, levelnum):
-        self.levelnum = levelnum
+    def __init__(self, lvlname):
+        self.lvlname = lvlname
 class StartNewGameEvent(Event):
     # from the "New Game" option in the menu mode to the game mode 
-    levelnum = 1 # first level
+    lvlname = 'lvl1' # first level
 
 class ToMenuEvent(Event):
     pass

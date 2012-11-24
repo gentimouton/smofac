@@ -17,7 +17,8 @@ DIR_MAP = [DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT]
 
 class Board():
 
-    def __init__(self, game, em, mapname, waitzone_length):
+    def __init__(self, game, em, mapname, waitzone_length, 
+                 fruit_names, seed, spawn_period):
         """ Build the board. """
 
         self.mapname = mapname
@@ -43,7 +44,7 @@ class Board():
         self.fruits_to_move = set()
 
         # When it reaches zero or below, move the fruits.
-        self.spawner = Spawner(em, self.E)
+        self.spawner = Spawner(em, self.E, fruit_names, seed, spawn_period)
 
         self._em = em
         em.subscribe(TriggerTrapEvent, self.on_triggertrap)

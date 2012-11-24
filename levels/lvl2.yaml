@@ -1,0 +1,30 @@
+########## INSTRUCTIONS ###########
+# Comments are on lines starting with #, not after a declaration.
+# Spaces are ignored, so ' a   : b  ' is the same as 'a:b'
+# Case - insensitive, so 'a:1' == 'A:1'
+
+rng_seed:               1
+map_name:               medium.txt
+
+
+# Duration between two fruits, in seconds, and fruit speed, in cells per second.
+# Distance-wise, the number of cells between two fruits is: 
+# spawn_period * fruit_speed.
+# Careful: if fruit_speed < 1/spawn_period, 
+# then the second fruit does not have space to appear, 
+# and it causes a game over right away. 
+spawn_period:           0.5
+fruit_speed:            6
+
+
+# Win after how many recipes?
+num_recipes_to_win:     6
+
+
+# Recipes
+recipes:
+   !!python/tuple [b,b,b]: 10
+   !!python/tuple [j,j,j]: 10
+   !!python/tuple [k,k,k]: 10
+   !!python/tuple [s,s,s]: 10
+
