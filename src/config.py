@@ -1,4 +1,4 @@
-import configparser
+import ConfigParser
 import logging
 import os
 
@@ -6,7 +6,7 @@ import os
 _logger = logging.getLogger('smofac')
 _dic = {} # store pairs of (config option, value)
 config_filepath = "smofac.conf"
-config = configparser.ConfigParser()
+config = ConfigParser.ConfigParser()
 fp = os.path.abspath(config_filepath)
 files_read = config.read(fp)
 

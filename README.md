@@ -5,7 +5,7 @@ Smoothie Factory is inspired by Rat-Poker, a Microsoft game from 1997. Video: ht
 
 Purpose: use pygame, know how to make UI menus, play a game with GF
 
-Concept: Fruits appear from a door, and travel on a conveyor path throughout the factory. You're in charge of ordering fruits according to certain recipes, so that when they reach the blender, they can be processed into a smoothie.
+Concept: Fruits appear from a door, and travel on a conveyor path throughout the factory. You're in charge of ordering fruits according to certain recipes, so that when they reach the blender, they can be processed into a smoothie. Press space to capture/release a fruit at a capture station.
 
 
 
@@ -16,13 +16,21 @@ GPL
 
 
 
-Install
+Install and run
 ====
 
+For Python 3:
 - python 3
 - python3-yaml
 - pygame
 
+For Python 2.7
+- python 2.7
+- yaml http://pyyaml.org/wiki/PyYAML
+- pygame
+- replace configparser by ConfigParser, in config.py
+
+Then: python smofac.py
 
 
 Phases
